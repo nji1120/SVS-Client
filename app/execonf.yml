@@ -1,0 +1,32 @@
+protocol:
+  type: UDP
+  server: 192.168.1.3
+  port: 9999
+  frequency: 5
+state_stabilizer:
+  trajectory_nums: 12
+threshold:
+  color_sensor:
+    r:
+      low: 1
+      high: 18
+    g:
+      low: 1
+      high: 18
+    b:
+      low: 1
+      high: 18
+  photo_diode: 0.12
+usb_port:
+  port1:
+    multiplexer:
+      master: 113
+      channel: 4
+      slave: 42
+    photo_diode:
+      bus: 0
+      channel: 0
+      device: 0
+      vref: 3.34
+      max_speed_hz: 75000
+      spi_mode: 0

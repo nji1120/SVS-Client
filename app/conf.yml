@@ -1,0 +1,24 @@
+server: 192.168.1.3
+frequency: 5 #Hz
+card_reader_num: 1
+port: 9999
+
+state_stabilizer:
+  trajectory_nums: 12 # trajectory_nums/frequency [s] の最頻値を状態とする
+
+pasori:
+  port_base_name: port #シンボリックリンクの名前 これに数字をつけて識別する
+  port_base_number: 1 #シンボリックリンクの数字の始まり これをインクリメントする
+
+threshold:
+  color_sensor:
+    r:
+      low: 1
+      high: 18
+    g:
+      low: 1
+      high: 18
+    b:
+      low: 1
+      high: 18
+  photo_diode: 0.12

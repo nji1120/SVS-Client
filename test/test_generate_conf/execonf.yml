@@ -1,0 +1,32 @@
+protocol:
+  type: UDP
+  server: 192.168.2.178
+  port: 5000
+  frequency: 4
+
+threshold:
+  color_sensor:
+    r:
+      low: 1
+      high: 9
+    g:
+      low: 1
+      high: 10
+    b:
+      low: 1
+      high: 10
+  photo_diode: 0.17
+  
+usb_port:
+  port1:
+    multiplexer:
+      master: 112
+      channel: 1
+      slave: 42
+    photo_diode:
+      bus: 0
+      channel: 0
+      device: 0
+      vref: 3.34
+      max_speed_hz: 75000
+      spi_mode: 0
