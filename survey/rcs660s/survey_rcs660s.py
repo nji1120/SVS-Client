@@ -15,9 +15,9 @@ import pandas as pd
 import argparse
 
 from Sensor_tutorials.multiplexer.TC4052B.tc4052b import TC4052B
-from Sensor_tutorials.rc_s660_s.src.rcs660s_manager import RCS660SManager
-from Sensor_tutorials.rc_s660_s.src.rcs660s import RCS660S
-from Sensor_tutorials.rc_s660_s.src.utils import print_hex
+from Sensor_tutorials.rc_s660s.src.rcs660s_manager import RCS660SManager
+from Sensor_tutorials.rc_s660s.src.rcs660s import RCS660S
+from Sensor_tutorials.rc_s660s.src.utils import print_hex
 
 
 def main():
@@ -57,7 +57,11 @@ def main():
                 response=rcs660s_manager.polling()
                 print(f"cnt: {cnt}, target channel: {ch}")
                 for key,value in response.items():
-                    print_hex("response",value["response"])
+                    if value is None:
+                        print(f"{key}: None")
+                    else:
+                        print(f"{key}: {" ".join(value)}")
+                print("-")
 
             cnt+=1
             time.sleep(1.0/fps)
