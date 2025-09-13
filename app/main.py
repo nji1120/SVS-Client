@@ -52,12 +52,11 @@ def main():
     #>> センサ値安定化クラス >>
 
 
-    sleep_time=1.0/freq*10**9
+    sleep_time=(1.0/freq)*10**9 #[s]
     count=0
     while True:
+        prev_time=time.time_ns()
         try:
-            prev_time=time.time_ns()
-
             values=sensors.read()
 
             card_states=judge_state(values,execonf["threshold"])

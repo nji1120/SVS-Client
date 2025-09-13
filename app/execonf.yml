@@ -16,7 +16,7 @@ threshold:
     b:
       low: 1
       high: 18
-  photo_diode: 0.12
+  photo_diode: 0.15
 usb_port:
   port1:
     multiplexer:
