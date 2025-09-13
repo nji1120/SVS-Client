@@ -12,28 +12,30 @@ sys.path.append(str(ROOT.parent)) # sensor_tutorialsのパスを追加
 import argparse
 import time
 
-from SVS_Client.src.sensor import ColorSensor
+from SVS_Client.src.module.color_sensor import ColorSensor
 
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--ch",default=0,type=int)
     args=parser.parse_args()
-    ch=args.ch
+    ch=f"ch{args.ch}"
 
     mux_master_address=113
     color_sensor_address=42
 
     color_sensor=ColorSensor(
         master_address=mux_master_address,
-        channel=0b1<<ch,
-        slave_address=color_sensor_address
+        slave_address=color_sensor_address,
+        channel_mapping={
+            f"ch{i}":1<<i for i in range(8)
+        }
     )
     freq=5 # Hz
     cnt=0
     while True:
         if cnt%freq==0:
-            sensor_msg=f"CH{ch} : {color_sensor.read()}"
+            sensor_msg=f"CH{ch} : {color_sensor.read(ch)}"
             print(f"cnt: {cnt}, {sensor_msg}")
         cnt+=1
         time.sleep(1.0/freq)

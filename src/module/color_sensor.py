@@ -29,41 +29,15 @@ class ColorSensor():
         self.master_addr=master_address
         self.slave_addr=slave_address
         self.channel_mapping=channel_mapping
-
-        self.__select_channel()
-
-        # >> センサのスリープ解除と設定変更 >>
-        ColorSensor.I2C_BUS.write_byte_data(
-            self.slave_addr,
-            register=0x00,
-            value=0x80
-        )
-
-        ColorSensor.I2C_BUS.write_byte_data(
-            self.slave_addr,
-            register=0x00,
-            value=0x0b
-        )
-        # << センサのスリープ解除と設定変更 <<
+        self.is_setup=False
 
 
-    def __select_channel(self, channel_name:str):
-        """
-        チャンネルを選択する
-        """
-        channel=self.channel_mapping[channel_name]
-        ColorSensor.I2C_BUS.write_byte_data(
-            i2c_addr=self.master_addr,
-            register=0x00,
-            value=channel
-        )
-
-    
     def read(self, channel_name:str):
         """
         channel名で指定して, 特定のチャンネルを開ける
         :param channel_name: チャンネル名, ex) 'ch0'
         """
+        if not self.is_setup: self.__setup(channel_name)
 
         self.__select_channel(channel_name)
         data=ColorSensor.I2C_BUS.read_i2c_block_data(
@@ -80,6 +54,41 @@ class ColorSensor():
 
         return rgbi
     
+
     def close_bus(self):
         ColorSensor.I2C_BUS.close()
 
+    
+    def __setup(self, channel_name:str):
+
+        self.__select_channel(channel_name)
+
+        # >> センサのスリープ解除と設定変更 >>
+        ColorSensor.I2C_BUS.write_byte_data(
+            self.slave_addr,
+            register=0x00,
+            value=0x80
+        )
+
+        ColorSensor.I2C_BUS.write_byte_data(
+            self.slave_addr,
+            register=0x00,
+            value=0x0b
+        )
+        # << センサのスリープ解除と設定変更 <<
+
+        self.is_setup=True
+
+
+    def __select_channel(self, channel_name:str):
+        """
+        チャンネルを選択する
+        """
+        channel=self.channel_mapping[channel_name]
+        ColorSensor.I2C_BUS.write_byte_data(
+            i2c_addr=self.master_addr,
+            register=0x00,
+            value=channel
+        )
+
+    
