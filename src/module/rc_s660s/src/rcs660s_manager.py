@@ -38,8 +38,8 @@ class RCS660SManager:
             ), is_debug=self.is_debug
         )
         self.rcs660s.send_command_frame()
-        response = self.rcs660s.read_response()
-        # print_response(response)
+        response = self.rcs660s.read_response(is_debug=False)
+        # print(response)
         # print("\n")
 
         # 2) SwitchProtocol (TypeA/B/F)
@@ -51,7 +51,7 @@ class RCS660SManager:
         )
         self.rcs660s.send_command_frame()
         response = self.rcs660s.read_response()
-        # print_response(response)
+        # print(response)
         # print("\n")
 
 
@@ -67,7 +67,7 @@ class RCS660SManager:
         )
         self.rcs660s.send_command_frame()
         response = self.rcs660s.read_response()
-        # print_response(response)
+        # print(response)
         # print("\n")
 
         # 4) transmission bit framing
@@ -79,11 +79,11 @@ class RCS660SManager:
         )
         self.rcs660s.send_command_frame()
         response = self.rcs660s.read_response()
-        # print_response(response)
+        # print(response)
         # print("\n")
 
         # 5) 通信速度設定
-        speed_def = 0b10011011 # 848kbps
+        speed_def = 0b10001001 # 212kbps. 0b10001001 -> 848kbpsだとtlv違反になる
         command=[0x05, 0x01, speed_def]
         self.rcs660s.create_command_frame(
             ccid_command=ManageSession(
@@ -92,7 +92,7 @@ class RCS660SManager:
         )
         self.rcs660s.send_command_frame()
         response = self.rcs660s.read_response()
-        # print_response(response)
+        # print(response)
         # print("\n")
 
         # 6) RF ON
@@ -104,7 +104,7 @@ class RCS660SManager:
         )
         self.rcs660s.send_command_frame()
         response = self.rcs660s.read_response()
-        # print_response(response)
+        # print(response)
         # print("\n")
 
 
@@ -114,7 +114,7 @@ class RCS660SManager:
     def polling(self) -> dict:
 
         # タイムアウト時間 設定 (公式ドキュメントによると精度は1ms)
-        timeout_ms = 5 # ms
+        timeout_ms = 5 # ms, 3ms未満はIDmを読み取れない. そのため3msが最速設定.
         timer_command=list((timeout_ms*1000).to_bytes(4, 'little')) # 待機時間[μs], リトルエンディアン
         timer_ccid=TransparentExchangeDataObjectTag.TIMER(timer_command)
 
