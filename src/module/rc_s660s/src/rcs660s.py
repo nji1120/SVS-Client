@@ -50,22 +50,24 @@ class RCS660S:
     def send_command_frame(self) -> None:
         self.uart.write(bytes(self.command_frame))
 
-    def read_response(self) -> dict:
+    def read_response(self, is_debug: bool=False) -> dict:
         size = 256
-        self.response = bytes(self.uart.read(size)) # bytes型で読み取る
+        self.response=bytes()
+        sleep_time=0.0001 # -> 1000Hz近辺まで周波数を上げなければ, 問題なし. 現状の目標は30Hz.
 
-        # # debug
-        # print_hex("response", self.response)
-        # for i in range(10):
-        #     time.sleep(0.1)
-        #     response_tmp = bytes(self.uart.read(size))
-        #     print_hex("response_tmp", response_tmp)
-        #     self.response += response_tmp
+        # コマンドが返ってくるまでloopで問い合わせる. 
+        # 全パケットが返ってきているかを, パケット長をもとに判定する
+        cnt=0
+        while not self.__is_full_response(self.response):
+            time.sleep(sleep_time)
+            self.response += bytes(self.uart.read(size))
+            if is_debug: print_hex(f"[{cnt}]"+f"{cnt*sleep_time:.3f}s "+f"{len(self.response)}bytes "+"response:", self.response)
+            cnt+=1
 
         ack = extract_bytes(self.response, 0, 7)
         ccid_response = extract_bytes(self.response, 7, len(self.response)-2)
         apdu_response = extract_bytes(self.response, 23, len(self.response)-2) # パケットデータチェックサムとポストアンブルを除く
-        
+
         response = self.ccid_command.read_ccid_response(ccid_response, apdu_response)
         return response
 
@@ -103,6 +105,23 @@ class RCS660S:
         self.packet_data_checksum = self.__calculate_checksum(
             self.ccid_command.get_ccid_command()
         )
+
+
+    def __is_full_response(self,response: bytes) -> bool:
+        """
+        応答データが全部返ってきているか判定する
+        """
+        is_full = False
+        if len(response) < 12:
+            #パケット長さが返ってきてない
+            return False
+        
+        # パケット長さをチェック
+        packet_length = int.from_bytes(response[10:12], 'big') # 10,11番目にbigエンディアンでパケット長が入ってる
+        if len(response[12:]) >= packet_length + 3: # 3足してるのはpacket + チェックサム2バイト, ポストアンブル1バイト
+            is_full = True
+
+        return is_full
 
 
     def __debug_command_frame(self) -> None:

@@ -1,0 +1,12 @@
+bus: 0
+device: 0
+vref: 3.334
+max_speed_hz: 75000
+spi_mode: 0
+mapping:
+  ch0: 5
+  ch1: 4
+  ch2: 3
+  ch3: 2
+  ch4: 1
+  ch5: 0

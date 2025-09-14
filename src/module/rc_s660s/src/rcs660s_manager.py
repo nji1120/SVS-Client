@@ -18,6 +18,7 @@ class RCS660SManager:
     def __init__(self,rcs660s:RCS660S,is_debug:bool=False):
         self.rcs660s = rcs660s
         self.is_debug = is_debug
+        self.is_setup=False
 
 
     def reset_device(self):
@@ -49,7 +50,6 @@ class RCS660SManager:
             ), is_debug=self.is_debug
         )
         self.rcs660s.send_command_frame()
-        time.sleep(0.1)
         response = self.rcs660s.read_response()
         # print_response(response)
         # print("\n")
@@ -83,7 +83,8 @@ class RCS660SManager:
         # print("\n")
 
         # 5) 通信速度設定
-        command=[0x05, 0x01, 0x89]
+        speed_def = 0b10011011 # 848kbps
+        command=[0x05, 0x01, speed_def]
         self.rcs660s.create_command_frame(
             ccid_command=ManageSession(
                 data_object_tag=ManageSessionDataObjectTag.SET_PARAMETERS(command)
@@ -107,10 +108,16 @@ class RCS660SManager:
         # print("\n")
 
 
+        self.is_setup=True
+
+
     def polling(self) -> dict:
 
-        timer_command=[0x60,0xea,0x00,0x00] # 待機時間[ms], リトルエンディアン
+        # タイムアウト時間 設定 (公式ドキュメントによると精度は1ms)
+        timeout_ms = 5 # ms
+        timer_command=list((timeout_ms*1000).to_bytes(4, 'little')) # 待機時間[μs], リトルエンディアン
         timer_ccid=TransparentExchangeDataObjectTag.TIMER(timer_command)
+
         polling_command=[0x06,0x00,0xff,0xff,0x00,0x00] # idm取得コマンド, 謎の0x06が必須(長さではない...)
         polling_ccid=TransparentExchangeDataObjectTag.TRANSCEIVE(polling_command)
         self.rcs660s.create_command_frame(
@@ -119,11 +126,14 @@ class RCS660SManager:
             ), is_debug=self.is_debug
         )
         self.rcs660s.send_command_frame()
-        time.sleep(0.1)
-        response = self.rcs660s.read_response()
+
+
+        response = self.rcs660s.read_response(is_debug=False) # Trueだとloop問い合わせの中身をprintする
         
         # バイト列からidmと工場番号に変換
         response_dict=self.__bite2idm(response)
+
+
         return response_dict
 
 

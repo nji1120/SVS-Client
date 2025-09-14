@@ -14,9 +14,9 @@ import time
 import pandas as pd
 import argparse
 
-from Sensor_tutorials.multiplexer.TC4052B.tc4052b import TC4052B
-from Sensor_tutorials.rc_s660s.src.rcs660s_manager import RCS660SManager
-from Sensor_tutorials.rc_s660s.src.rcs660s import RCS660S
+from SVS_Client.src.module.tc4052b import TC4052B
+from SVS_Client.src.module.rc_s660s.src.rcs660s_manager import RCS660SManager
+from SVS_Client.src.module.rc_s660s.src.rcs660s import RCS660S
 from Sensor_tutorials.rc_s660s.src.utils import print_hex
 
 
@@ -27,7 +27,7 @@ def main():
     ch=args.ch
 
     # 2in2outのMUX
-    mapping=pd.read_csv(Path(__file__).parent/"mux_mapping.csv")
+    mapping=pd.read_csv(Path(__file__).parent/"mux_mapping.csv",index_col=0)
     print("MUX mapping:")
     print(mapping)
 
