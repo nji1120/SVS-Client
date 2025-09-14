@@ -2,6 +2,7 @@
 カードリーダ全体を管理するクラス
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 import time
 
 from ..module.tc4052b import TC4052B
@@ -19,7 +20,7 @@ class CardReaderManager:
         color_sensor:ColorSensor,
         photo_diode:PhotoDiode,
         channel_names:list[str],
-        delta_time:float=0.02
+        delta_time:float=0.00
     ):
         """
         :param tc4052b: TC4052B, RCS660Sのチャンネル選択用MUX
@@ -29,8 +30,16 @@ class CardReaderManager:
         :param channel_names: チャンネル名のリスト(全センサ種類間で共通とする), ex) ['ch0', 'ch1', 'ch2',...]
         :param delta_time: 各センサの読み取り間隔 [s]
         """
+
+        # RCS660Sの初期化(終わってない場合)
         self.tc4052b=tc4052b
         self.rcs660s_manager=rcs660s_manager
+        if not self.rcs660s_manager.is_setup:
+            ch_tmp=channel_names[0] # とりあえず初期化用のチャンネル選ぶ
+            self.tc4052b.switch_channel(ch_tmp)
+            time.sleep(delta_time)
+            self.rcs660s_manager.reset_device()
+            self.rcs660s_manager.setup_device()
 
         self.color_sensor=color_sensor
 
@@ -40,7 +49,7 @@ class CardReaderManager:
         self.delta_time=delta_time
 
 
-    def read(self):
+    def read(self) -> dict:
 
         # バスごとにスレッドで並列実行する
         future_results=[]
@@ -54,13 +63,16 @@ class CardReaderManager:
                 out=future.result()
                 future_results.append(out)
 
-        # チャンネルごとに結果をまとめる
-        sensor_values={}
-        for ch_name in self.channel_names:
-            sensor_values[ch_name]={
-                result[ch_name] for result in future_results
-            }
 
+        # チャンネルごとに結果をまとめる
+        sensor_values=defaultdict(dict)
+        for result in future_results:
+            for ch_name, sensor_dict in result.items():
+                for sensor, value in sensor_dict.items():
+                    sensor_values[ch_name][sensor] = value
+        sensor_values=dict(sensor_values)
+
+        
         return sensor_values
 
 

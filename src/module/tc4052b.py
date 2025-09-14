@@ -14,23 +14,22 @@ HIGH=1
 LOW=0
 KEY_LIST_HIGH=["HIGH","HI","H","ON","TRUE","T",1,True]
 KEY_LIST_LOW=["Low","LO","L","OFF","FALSE","F",0,False]
+KEY_LIST_NONE=["NONE","N","N/A","","NAN",None] # pd.NAは含めない.含めるとinによる検索でエラー吐く
 def CHECK_HIGH_LOW(key) -> int|None:
 
-    # 何も入ってないときはNone. GPIOも何もしない
-    if key is None or key == "" or pd.isna(key):
+    key=key.upper() if type(key) is str else key
+    if pd.isna(key):
+        return None
+    elif key in KEY_LIST_NONE:
         return None
 
-    elif type(key) in [int,bool]:
-        return key
-    elif type(key) is str:
-        if key.upper() in KEY_LIST_HIGH:
-            return HIGH
-        elif key.upper() in KEY_LIST_LOW:
-            return LOW
-        else:
-            raise ValueError(f"Invalid key: {key}")
+    elif key in KEY_LIST_HIGH:
+        return HIGH
+    elif key in KEY_LIST_LOW:
+        return LOW
     else:
-        raise ValueError(f"Invalid key type: {key} : {type(key)}")
+        raise ValueError(f"Invalid key: {key}")
+
 
 class AddressPin:
     """
@@ -64,31 +63,30 @@ class TC4052B:
     """
 
 
-    def __init__(self, mapping:pd.DataFrame, index_col_id:int=0):
+    def __init__(self, mapping:pd.DataFrame):
         """
-        :param index_col_id: インデックスの列番号. 0がデフォルト
         :param mapping: 
-            columns: channel_name, gpio_pins (開けるチャンネル名とアドレス指定に使うgpioのピン番号)
-            rows: ch0, LOW, HIGH, LOW, LOW,... (開けるチャンネル名と各GPIOのHIGH/LOW)
+            index: channel_name (開けるチャンネル名)
+            columns: gpio_pins (アドレス指定に使うgpioのピン番号)
+            rows: LOW, HIGH, LOW, LOW,... (各GPIOのHIGH/LOW)
 
             ex)
-            channel_name, 5, 6, 13, 19,
-            'ch0', LOW, HIGH, LOW, LOW,
-            'ch1', LOW, LOW, HIGH, LOW,
+                 5, 6, 13, 19,
+            ch0: LOW, HIGH, LOW, LOW,
+            ch1: LOW, LOW, HIGH, LOW,
             ...
         """
         GPIO.setmode(GPIO.BCM) # GPIOのピン番号を指定するモード(!!物理的な配置番号じゃないから注意!!)
 
         # gpioピン
         address_pins=[
-            AddressPin(pin) for pin in mapping.columns[1:]
+            AddressPin(pin) for pin in mapping.columns
         ] 
 
         # channel切り替え用のswitchを作成
         self.channel_switch=self.__create_channel_switch(
             address_pins=address_pins,
             mapping=mapping,
-            index_col_id=index_col_id
         )
 
 
@@ -115,7 +113,6 @@ class TC4052B:
         self, 
         address_pins:list[AddressPin], 
         mapping:pd.DataFrame,
-        index_col_id:int=0
     ) -> dict:
         """
         csvのmappingから, 関数でchannel切り替えができるswitchを作成する.
@@ -125,11 +122,11 @@ class TC4052B:
             ...
         """
         channel_switch={}
-        for i, row in mapping.iterrows():
+        for idx, row in mapping.iterrows():
 
-            channel_name=row.iloc[index_col_id]
+            channel_name=idx
             high_low_arrangement=[]
-            for address_pin,key in zip(address_pins,row.iloc[index_col_id+1:]):
+            for address_pin,key in zip(address_pins,row.values):
                 # 関数のmapping
                 func_map={
                     None: address_pin.noop,

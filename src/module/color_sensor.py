@@ -14,9 +14,9 @@ class ColorSensor():
     BUS_NUM=1 #バス番号. 基本は1
     I2C_BUS=SMBus(BUS_NUM) #クラスで共通のバスを使う
 
-    def __init__(self, master_address,slave_address, channel_mapping:dict):
+    def __init__(self, mux_address,slave_address, channel_mapping:dict):
         """
-        :param master_address: マルチプレクサのアドレス
+        :param mux_address: マルチプレクサのアドレス
         :param slave_address: カラーセンサのアドレス
         :param channel_mapping: チャンネルとアドレスの対応, chN : 1<<N
             {
@@ -26,7 +26,7 @@ class ColorSensor():
                 'ch7': 0b10000000
             }
         """
-        self.master_addr=master_address
+        self.master_addr=mux_address
         self.slave_addr=slave_address
         self.channel_mapping=channel_mapping
         self.is_setup=False

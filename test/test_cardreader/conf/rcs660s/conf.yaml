@@ -1,0 +1,10 @@
+port: /dev/ttyAMA0
+baudrate: 115200
+timeout_fps: 100
+mapping:
+  ch0: {5: L, 6: L, 13: N, 19: N}
+  ch1: {5: H, 6: L, 13: N, 19: N}
+  ch2: {5: L, 6: H, 13: N, 19: N}
+  ch3: {5: H, 6: H, 13: L, 19: L}
+  ch4: {5: H, 6: H, 13: H, 19: L}
+  ch5: {5: H, 6: H, 13: L, 19: H}
