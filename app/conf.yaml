@@ -1,0 +1,55 @@
+connection:
+  server: 192.168.2.100
+  port: 5000
+  frequency: 35 #Hz
+
+reader_channels: ["ch0"] # 読み取り対象のチャンネル名
+
+rcs660s:
+  port: /dev/ttyAMA0
+  baudrate: 115200
+  timeout_fps: 200 # 200が最大
+  mapping:
+    ch0: {5: L, 6: L, 13: N, 19: N}
+    ch1: {5: H, 6: L, 13: N, 19: N}
+    ch2: {5: L, 6: H, 13: N, 19: N}
+    ch3: {5: H, 6: H, 13: L, 19: L}
+    ch4: {5: H, 6: H, 13: H, 19: L}
+    ch5: {5: H, 6: H, 13: L, 19: H}
+
+color-sensor:
+  mux_address: 113
+  slave_address: 42
+  mapping:
+    ch0: 1
+    ch1: 2
+    ch2: 4
+    ch3: 8
+    ch4: 16
+    ch5: 32
+  threshold:
+    ir: 14
+    r:
+      low: 1
+      high: 18
+    g:
+      low: 1
+      high: 18
+    b:
+      low: 1
+      high: 18
+
+photo-diode:
+  bus: 0
+  device: 0
+  vref: 3.334
+  max_speed_hz: 75000
+  spi_mode: 0
+  mapping:
+    ch0: 5
+    ch1: 4
+    ch2: 3
+    ch3: 2
+    ch4: 1
+    ch5: 0
+  threshold: 0.02
