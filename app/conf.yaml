@@ -1,9 +1,10 @@
 connection:
   server: 192.168.2.100
   port: 5000
-  frequency: 35 #Hz
+  frequency: 2 #Hz
 
-reader_channels: ["ch0"] # 読み取り対象のチャンネル名
+reader_channels: ["ch1","ch5"] # 読み取り対象のチャンネル名
+value_stabilizer_trj_seconds: 2.5 # 値安定化する軌跡の秒数 [s] → この値÷2が反応時間となる
 
 rcs660s:
   port: /dev/ttyAMA0
@@ -18,6 +19,8 @@ rcs660s:
     ch5: {5: H, 6: H, 13: L, 19: H}
 
 color-sensor:
+  rgb_read_type: ratio # raw：センサ値そのまま, ratio：rgb比率+IRのbaseline差分
+  ir_read_type: difference # raw：センサ値そのまま, difference：カードが無いときの値(baseline)からの差分
   mux_address: 113
   slave_address: 42
   mapping:
@@ -28,18 +31,19 @@ color-sensor:
     ch4: 16
     ch5: 32
   threshold:
-    ir: 14
+    ir: 1 # difference方式
     r:
-      low: 1
-      high: 18
+      low: 0.1945
+      high: 0.2232
     g:
-      low: 1
-      high: 18
+      low: 0.3837
+      high: 0.4234
     b:
-      low: 1
-      high: 18
+      low: 0.3749
+      high: 0.3977
 
 photo-diode:
+  read_type: difference # raw：センサ値そのまま, difference：カードが無いときの値(baseline)からの差分
   bus: 0
   device: 0
   vref: 3.334
@@ -52,4 +56,4 @@ photo-diode:
     ch3: 2
     ch4: 1
     ch5: 0
-  threshold: 0.02
+  threshold: -0.01 # difference方式

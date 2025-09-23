@@ -8,15 +8,17 @@ import pandas as pd
 import yaml
 import json
 import time
+from math import ceil
 
-from src.reader.CardStateAnalyzer import CardStateAnalyzer
-from src.reader.CardReaderManager import CardReaderManager
+from src.reader.card_state_analyzer import CardStateAnalyzer
+from src.reader.card_reader_manager import CardReaderManager, PhotoDiodeReadType, ColorSensorIRReadType
 from src.module.tc4052b import TC4052B
 from src.module.rc_s660s.src.rcs660s import RCS660S
 from src.module.rc_s660s.src.rcs660s_manager import RCS660SManager
-from src.module.color_sensor import ColorSensor
+from src.module.color_sensor import ColorSensor, ColorSensorRGBReadType
 from src.module.photo_diode import PhotoDiode
 from src.utils.sleep import sleep
+from src.utils.value_stabilizer import ValueStabilizer
 
 
 
@@ -44,7 +46,7 @@ def main():
         baudrate=conf_rcs660s["baudrate"], 
         timeout_fps=conf_rcs660s["timeout_fps"]
     )
-    rcs660s_manager=RCS660SManager(rcs660s=rcs660s)
+    rcs660s_manager=RCS660SManager(rcs660s=rcs660s,is_debug=False)
 
 
     # ColorSensorのインスタンス化
@@ -53,7 +55,8 @@ def main():
     color_sensor=ColorSensor(
         mux_address=conf_color_sensor["mux_address"],
         slave_address=conf_color_sensor["slave_address"],
-        channel_mapping=conf_color_sensor["mapping"] # mappingは辞書とする
+        channel_mapping=conf_color_sensor["mapping"], # mappingは辞書とする,
+        read_type=ColorSensorRGBReadType(conf_color_sensor["rgb_read_type"])
     )
     
 
@@ -75,13 +78,22 @@ def main():
         rcs660s_manager=rcs660s_manager,
         color_sensor=color_sensor,
         photo_diode=photo_diode,
-        channel_names=config_yaml["reader_channels"] # 検出するチャンネル名をここで指定する
+        channel_names=config_yaml["reader_channels"], # 検出するチャンネル名をここで指定する
+        photo_diode_read_type=PhotoDiodeReadType(conf_photo_diode["read_type"]),
+        color_sensor_ir_read_type=ColorSensorIRReadType(conf_color_sensor["ir_read_type"]),
+        delta_time=0.000 # チャンネルごとのサンプリング間隔
     )
 
 
     card_state_analyzer=CardStateAnalyzer(
         color_sensor_threshold=config_yaml["color-sensor"]["threshold"],
         photo_diode_threshold=config_yaml["photo-diode"]["threshold"]
+    )
+
+
+    value_stabilizer=ValueStabilizer(
+        trajectory_nums=ceil(frequency*config_yaml["value_stabilizer_trj_seconds"]), # S秒分の軌跡で安定化をする
+        channel_names=config_yaml["reader_channels"]
     )
 
 
@@ -97,6 +109,12 @@ def main():
             previous_time=time.time_ns()
             sensor_values=cardreader_manager.read()
             card_states=card_state_analyzer.analyze_card_state(sensor_values)
+
+            # >> 値安定化 >>
+            value_stabilizer.add_trajectory(card_states)
+            card_states=value_stabilizer.get_stable_states()
+            # << 値安定化 <<
+
             sock.sendto(
                 json.dumps(card_states).encode(),
                 (server,port)

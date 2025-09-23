@@ -1,3 +1,4 @@
+
 class CardStateAnalyzer:
     def __init__(self, color_sensor_threshold:dict, photo_diode_threshold:float):
         """
@@ -38,11 +39,12 @@ class CardStateAnalyzer:
         """
         card_states={}
         for key, value in values.items():
+            felica_raw_value = value["felica"]
             is_card, is_front=self.__analyze_color_sensor(value["color_sensor"])
             is_vertical=self.__analyze_photo_diode(value["photo_diode"]) if is_card else None # カードがあれば縦横判定
-            felica_id="".join(value["felica"]) if not value["felica"] is None else "0000000000000000"
+            felica_id="".join(felica_raw_value) if not felica_raw_value is None else "0000000000000000"
             card_states[key]={
-                "is_card":is_card,
+                "is_card":felica_raw_value is not None and is_card,
                 "card_id":felica_id,
                 "is_front":is_front,
                 "is_vertical":is_vertical
@@ -59,7 +61,7 @@ class CardStateAnalyzer:
 
         r,g,b,ir=list(color_sensor_values.values())
 
-        is_card=False if ir>self.ir_th else True
+        is_card=True if abs(ir)>=self.ir_th else False
         is_front:bool
 
         if not is_card:
@@ -71,6 +73,7 @@ class CardStateAnalyzer:
                 is_front=False
         
         return is_card, is_front
+
 
 
     def __analyze_photo_diode(self, photo_diode_value):
