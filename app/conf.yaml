@@ -1,0 +1,73 @@
+connection:
+  server: 192.168.2.119
+  port: 9999
+  frequency: 5 #Hz
+
+reader_channels: ["ch5"] # 読み取り対象のチャンネル名
+value_stabilizer_trj_seconds: 3 # [s] 値安定化する軌跡の秒数 → この値÷2が反応時間となる
+
+rcs660s:
+  port: /dev/ttyAMA0
+  baudrate: 115200
+  timeout_fps: 200 # 200が最大
+  mapping:
+    ch0: {5: L, 6: L, 13: N, 19: N} # int → pin番号, L/H/N: low/high/none
+    ch1: {5: H, 6: L, 13: N, 19: N}
+    ch2: {5: L, 6: H, 13: N, 19: N}
+    ch3: {5: H, 6: H, 13: L, 19: L}
+    ch4: {5: H, 6: H, 13: H, 19: L}
+    ch5: {5: H, 6: H, 13: L, 19: H}
+
+color-sensor:
+  rgb_read_type: ratio # raw：センサ値そのまま, ratio：rgb比率+IRのbaseline差分
+  ir_read_type: difference # raw：センサ値そのまま, difference：カードが無いときの値(baseline)からの差分
+  mux_address: 113
+  slave_address: 42
+  mapping:
+    ch0: 1
+    ch1: 2
+    ch2: 4
+    ch3: 8
+    ch4: 16
+    ch5: 32
+  threshold:
+    ir: 2 # difference方式
+
+    ## -- 赤スリーブ ------------------------
+    r:
+      low: 0.316535692
+      high: 0.364420859
+    g:
+      low: 0.32218329
+      high: 0.353533888
+    b:
+      low: 0.302937088
+      high: 0.340289939
+
+    # ## -- 緑スリーブ ------------------------
+    # r:
+    #   low: 0.199262083
+    #   high: 0.222007464
+    # g:
+    #   low: 0.381243848
+    #   high: 0.417328572
+    # b:
+    #   low: 0.374858632
+    #   high: 0.404341717
+
+
+photo-diode:
+  read_type: difference # raw：センサ値そのまま, difference：カードが無いときの値(baseline)からの差分
+  bus: 0
+  device: 0
+  vref: 3.334
+  max_speed_hz: 75000
+  spi_mode: 0
+  mapping:
+    ch0: 5
+    ch1: 4
+    ch2: 3
+    ch3: 2
+    ch4: 1
+    ch5: 0
+  threshold: -0.005 # difference方式

@@ -1,6 +1,6 @@
 port: /dev/ttyAMA0
 baudrate: 115200
-timeout_fps: 100
+timeout_fps: 200 # 200が最大
 mapping:
   ch0: {5: L, 6: L, 13: N, 19: N}
   ch1: {5: H, 6: L, 13: N, 19: N}
