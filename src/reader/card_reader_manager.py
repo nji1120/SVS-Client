@@ -116,8 +116,9 @@ class CardReaderManager:
         for channel_name in self.channel_names:
             self.tc4052b.switch_channel(channel_name) # RCS660Sのチャンネル選択
             time.sleep(self.delta_time) # ちょっとだけ待つ
+            felica_hex=self.rcs660s_manager.polling()["idm"] # ここで取れるのは16進数表記のバイトごとのリスト
             out[channel_name]={
-                "felica":self.rcs660s_manager.polling()["idm"]
+                "felica":felica_hex
             }
         return out
 

@@ -19,6 +19,7 @@ from src.module.color_sensor import ColorSensor, ColorSensorRGBReadType
 from src.module.photo_diode import PhotoDiode
 from src.utils.sleep import sleep
 from src.utils.value_stabilizer import ValueStabilizer
+from src.utils.raspi2unity_adapter import Raspi2UnityAdapter
 
 
 
@@ -97,6 +98,9 @@ def main():
     )
 
 
+    raspi2unity_adapter=Raspi2UnityAdapter() # RasPi側のjson形式からUnity側のjson形式に変換する
+
+
     # >> 読み取り >>
     print("[Start] read")
     previous_time=time.time_ns()
@@ -114,6 +118,10 @@ def main():
             value_stabilizer.add_trajectory(card_states)
             card_states=value_stabilizer.get_stable_states()
             # << 値安定化 <<
+
+            # >> Unity側のjson形式に変換 >>
+            card_states=raspi2unity_adapter.adapt(card_states)
+            # << Unity側のjson形式に変換 <<
 
             sock.sendto(
                 json.dumps(card_states).encode(),

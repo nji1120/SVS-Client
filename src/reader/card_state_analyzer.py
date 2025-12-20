@@ -39,10 +39,11 @@ class CardStateAnalyzer:
         """
         card_states={}
         for key, value in values.items():
-            felica_raw_value = value["felica"]
+            felica_raw_value = value["felica"] # raw valueは16進数表記のバイトごとのリスト
             is_card, is_front=self.__analyze_color_sensor(value["color_sensor"])
             is_vertical=self.__analyze_photo_diode(value["photo_diode"]) if is_card else None # カードがあれば縦横判定
             felica_id="".join(felica_raw_value) if not felica_raw_value is None else "0000000000000000"
+            felica_id=int(felica_id,16) if not felica_id is None else 0 # 16進数を10進数に変換
             card_states[key]={
                 "is_card":felica_raw_value is not None and is_card,
                 "card_id":felica_id,
