@@ -33,6 +33,7 @@ class SwitchProtocol(CCIDCommandAbc):
         p2=[0x02]
         lc=list(len(self.data_object_tag).to_bytes(1, 'big'))
         data_in=self.data_object_tag
+        le=[0x00]
         self.ab_data=(
             cla
             + ins
@@ -40,4 +41,5 @@ class SwitchProtocol(CCIDCommandAbc):
             + p2
             + lc
             + data_in
+            + le
         )

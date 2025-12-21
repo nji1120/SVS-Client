@@ -29,6 +29,13 @@ class TransparentExchangeDataObjectTag:
         return data_in
 
     @staticmethod
+    def SET_PARAMETERS(command:list[int])-> list[int]:
+        data_in=[0xFF, 0x6E]
+        data_length=list(len(command).to_bytes(1, 'big'))
+        data_in += data_length + command
+        return data_in
+
+    @staticmethod
     def TRANSMIT(command:list[int])-> list[int]:
         data_in=[0x93]
         data_length=list(len(command).to_bytes(1, 'big'))
@@ -73,6 +80,7 @@ class TransparentExchange(CCIDCommandAbc):
         p2=[0x01]
         lc=list(len(self.data_object_tag).to_bytes(1, 'big'))
         data_in=self.data_object_tag
+        le=[0x00]
         self.ab_data=(
             cla
             + ins
@@ -80,4 +88,5 @@ class TransparentExchange(CCIDCommandAbc):
             + p2
             + lc
             + data_in
+            + le
         )
