@@ -2,7 +2,9 @@ from pathlib import Path
 ROOT=Path(__file__).parent.parent
 import sys
 sys.path.append(str(ROOT))
+import traceback
 
+from enum import Enum
 from socket import socket,AF_INET,SOCK_DGRAM
 import pandas as pd
 import yaml
@@ -15,12 +17,17 @@ from src.reader.card_reader_manager import CardReaderManager, PhotoDiodeReadType
 from src.module.tc4052b import TC4052B
 from src.module.rc_s660s.src.rcs660s import RCS660S
 from src.module.rc_s660s.src.rcs660s_manager import RCS660SManager
+from src.module.rc_s660s.src.manager.rcs660s_manager_typeA_14443_3A import RCS660SManagerTypeA144433A
 from src.module.color_sensor import ColorSensor, ColorSensorRGBReadType
 from src.module.photo_diode import PhotoDiode
 from src.utils.sleep import sleep
 from src.utils.value_stabilizer import ValueStabilizer
 from src.utils.raspi2unity_adapter import Raspi2UnityAdapter
 
+
+class TagType(Enum):
+    FELICA="Felica"
+    TYPEA_14443_3A="TypeA_14443-3A"
 
 
 def main():
@@ -47,7 +54,18 @@ def main():
         baudrate=conf_rcs660s["baudrate"], 
         timeout_fps=conf_rcs660s["timeout_fps"]
     )
-    rcs660s_manager=RCS660SManager(rcs660s=rcs660s,is_debug=False)
+
+
+    # RCS660SManagerのインスタンス化. Tagによってコマンドとか違う
+    tag_type=TagType(config_yaml["tag_type"])
+    if tag_type==TagType.TYPEA_14443_3A:
+        print("[Init] rcs660s_manager_typeA_14443_3A")
+        rcs660s_manager=RCS660SManagerTypeA144433A(rcs660s=rcs660s,is_debug=False)
+    elif tag_type==TagType.FELICA:
+        print("[Init] rcs660s_manager_felica")
+        rcs660s_manager=RCS660SManager(rcs660s=rcs660s,is_debug=False)
+    else:
+        raise ValueError(f"Invalid tag type: {tag_type}")
 
 
     # ColorSensorのインスタンス化
@@ -82,7 +100,7 @@ def main():
         channel_names=config_yaml["reader_channels"], # 検出するチャンネル名をここで指定する
         photo_diode_read_type=PhotoDiodeReadType(conf_photo_diode["read_type"]),
         color_sensor_ir_read_type=ColorSensorIRReadType(conf_color_sensor["ir_read_type"]),
-        delta_time=0.000 # チャンネルごとのサンプリング間隔
+        delta_time=1/1000 # チャンネルごとのサンプリング間隔 [s]
     )
 
 
@@ -133,6 +151,7 @@ def main():
             elapsed_time=(time.time_ns()-start_time)*10**-9
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
             break
     # >> 読み取り >>
 

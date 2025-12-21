@@ -26,6 +26,7 @@ class RCS660SManager:
             ccid_command=ResetDevice(), is_debug=self.is_debug
         )
         self.rcs660s.send_command_frame()
+        time.sleep(10/1000) #response返るまでちょっと待つ
         self.rcs660s.uart.read(128)
 
     
@@ -145,6 +146,11 @@ class RCS660SManager:
         【チャンネル数と最大周波数】
         - 1チャンネル: 26Hz程度
         - 2チャンネル: 13Hz程度 (かなり線形に落ちてるなぁ)
+
+        :reuturn {"id":id, "pmm":pmm}, カードが無いときはNoneになる
+            ここで, 識別に使う数値のキーは'id'とする.(それ以外はぶっちゃけなんでもいい)
+            id:16進数表記のリスト. felica固有のID
+            pmm:16進数8つの製造工場ID
         """
 
 
@@ -225,14 +231,14 @@ class RCS660SManager:
 
         apdu_success_key="success" 
         if apdu_response["status"] != apdu_success_key: # カードが無い or 何らかのエラー
-            out["idm"] = None
+            out["id"] = None
             out["pmm"] = None
         elif apdu_response["status"] == apdu_success_key: # カードがある
             ccid_hex=[f"{b:02X}" for b in ccid_response["response"]]
             byte_size=8
             pmm_tail=2
             idm_tail=byte_size+pmm_tail
-            out["idm"] = ccid_hex[-(idm_tail+byte_size):-(idm_tail)]
+            out["id"] = ccid_hex[-(idm_tail+byte_size):-(idm_tail)]
             out["pmm"] = ccid_hex[-(pmm_tail+byte_size):-(pmm_tail)]
 
         return out
