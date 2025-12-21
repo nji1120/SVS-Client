@@ -1,0 +1,11 @@
+B1,B2,status,message
+0x90,0x00,success,成功
+0x62,0x82,shorter_response_expected,応答データが短すぎる
+0x63,0x00,invalid_connection_card_or_port400,カードまたはポートとの通信異常
+0x63,0x01,invalid_process_order,処理順序が不正
+0x64,0x01,no_response_from_card,カードが応答しない
+0x67,0x00,invalid_data_object_length,データオブジェクトの長さが不正
+0x69,0x8A,dupilicate_start_transparent_session,既にtransparentセッションが開始されている
+0x6A,0x80,invalid_data_object_tag_tlv,データオブジェクトのtagのtlv形式が不正
+0x6A,0x81,no_defined_data_object_tag,データオブジェクトのtagが未定義
+0x6F,0x00,unexpected_error,予期せぬエラー

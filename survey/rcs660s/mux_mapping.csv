@@ -1,0 +1,8 @@
+channel_name,5,6,13,19
+ch0,L,L,N,N
+ch1,H,L,N,N
+ch2,L,H,N,N
+ch3,H,H,L,L
+ch4,H,H,H,L
+ch5,H,H,L,H
+ch6,H,H,H,H

@@ -1,0 +1,1251 @@
+リーダーモジュール
+NFC Port-400 シリーズ
+コマンドリファレンスマニュアル
+UART インターフェース編
+<簡易版>
+Version 1.0
+No. M1215-J01-00
+• FeliCa は、ソニー株式会社が開発した非接触 IC カードの技術方式です。
+• FeliCa は、ソニーグループ株式会社またはその関連会社の登録商標または商標です。
+• その他、本文書中の会社名や商品名は、該当する各社の登録商標または商標です。
+• 本文書の全部または一部の複写、複製および第三者への配布を禁止します。
+• 本文書の内容は予告なく変更することがあります。
+• 本文書を参照することによって生じた損害について、当社は一切の責任を負いません。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 3 of 51
+はじめに
+本文書は、NFC Port 400シリーズのRC-S660/Sのプロトコル仕様およびコマンド仕様について説明します。
+参考文献
+[1] Specification for Integrated Circuit(s) Cards Interface Devices Revision 1.1
+https://www.usb.org/sites/default/files/DWG_Smart-Card_CCID_Rev110.pdf
+[2] PC/SC Part2 (2.01.09)
+[3] PC/SC Part3 (2.01.09)
+[4] PC/SC Part3 Supplemental Document (2.01.09)
+[5] NFC Activity Technical Specification 2.1
+[6] NFC Profiles Technical Specification 1.0
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 4 of 51
+本製品の機能は、実際のアプリケーションで期待どおり動作することを充分確認して使用してください。
+本文書で用いる数値については、以下の表記を用います。
+11001100b 2 進数の値
+42 10 進数の値
+0x42、42h 16 進数の値
+bn ビット位置 n（例：b0）
+Dn バイト位置 n（例：D0）
+XX 任意の値 XX。16 進数の場合は XXh となる。
+なお、多バイトデータのバイト位置およびビット位置を指示する際には、データは D0 から Dn に向かって
+アドレスが増加していく方向に配置します。
+D0
+・・・
+Dn
+b7 b6 b5 b4 b3 b2 b1 b0 b7 b6 b5 b4 b3 b2 b1 b0
+アプリケーションを開発する際には、『FeliCa カードに関するソフトウェア開発テクニカルノート』および
+『アプリケーション開発におけるセキュリティの考え方』を参照してください。
+また、本文書に関連する一部のドキュメントについては、
+https://www.sony.co.jp/Products/felica/business/tech-support
+で公開しています。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 5 of 51
+目次
+基本仕様 ..................................................................................................................... 7
+1.1 システム構成図 ..................................................................................................................... 7
+1.2 起動処理 ...............................................................................................................................8
+1.2.1 NFC Port-400 起動時処理...............................................................................................8
+1.2.2 NFC Port-400 起動時間 .................................................................................................8
+ホスト間通信仕様 ........................................................................................................ 9
+2.1 UART インターフェース........................................................................................................9
+2.2 通信シーケンス ................................................................................................................... 10
+2.3 ホストパケット フォーマット ............................................................................................. 10
+2.3.1 コマンドフレーム.......................................................................................................... 10
+2.3.2 パケット構造と処理 ....................................................................................................... 11
+2.3.3 ACK フレーム................................................................................................................ 14
+2.4 CCID コマンド .................................................................................................................... 16
+2.4.1 PC_to_RDR_Escape ......................................................................................................17
+2.4.2 PC_to_RDR_Abort ....................................................................................................... 18
+2.4.3 Status およびエラーコード ...........................................................................................20
+2.4.4 その他エラー .................................................................................................................21
+NFC 通信仕様 ............................................................................................................ 22
+APDU コマンド仕様 ................................................................................................... 23
+4.1 コマンド一覧 ...................................................................................................................... 23
+4.2 状態別 APDU コマンド実行可否...........................................................................................24
+4.3 代表的なシーケンス ............................................................................................................ 25
+4.4 APDU エラーステータス ..................................................................................................... 25
+4.5 Lc、Le 設定とレスポンス仕様 .............................................................................................29
+4.6 Load Keys..........................................................................................................................30
+4.7 General Authenticate ........................................................................................................31
+4.8 Manage Session ............................................................................................................... 32
+4.9 Transparent Exchange...................................................................................................... 35
+4.10 Switch Protocol.................................................................................................................38
+4.11 Reset Device .....................................................................................................................40
+4.12 Get Firmware Version....................................................................................................... 41
+4.13 Power Down .....................................................................................................................43
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 6 of 51
+機能に関する補足事項 ................................................................................................ 44
+5.1 Transparent Session.........................................................................................................44
+5.1.1 PC/SC 準拠仕様との差異...............................................................................................44
+5.1.2 注意事項 .......................................................................................................................44
+状態に関する補足事項 ................................................................................................ 45
+6.1 コマンドの排他制御 ............................................................................................................45
+機能制限事項／留意事項 ............................................................................................. 46
+7.1 機能制限事項 ......................................................................................................................46
+7.2 留意事項 .............................................................................................................................46
+Appendix A レスポンスデータ詳細 .............................................................................. 47
+A.1 Get Data レスポンスデータ詳細.......................................................................................... 47
+A.2 ATR データ詳細 ..................................................................................................................48
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 7 of 51
+基本仕様
+本章では、システム構成図と起動処理について説明します。
+1.1 システム構成図
+システム構成図を図 1-1 に示します。
+
+図 1-1：NFC Port-400 システム構成図
+NFC Port-400 チップの主な役割は、以下のとおりです。
+• ホストコントローラーとの通信
+• RFFE（RF Front End）チップの制御
+NFC Port-400 チップが内部に持つ Flash ROM には、NFC Port-400 ファームウェアが書き込まれます。
+ホストコントローラー
+NFC Port-400 チップ RFFE (RF
+Front
+End)
+チップ
+NFC Port-400
+ファームウェア
+NFC Port-400
+対向デバイス
+UART
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 8 of 51
+1.2 起動処理
+1.2.1 NFC Port-400 起動時処理
+NFC Port-400 は電源投入後、プログラム領域の CRC チェックおよびファームウェア更新チェックを行いま
+す。
+CRC チェックにて異常を検知した場合には、ファームウェアの動作を停止します。
+1.2.2 NFC Port-400 起動時間
+NFC Port-400 の電源を投入してから NFC Port-400 がホストパケットを受信可能になるまでの時間は 70
+ms です。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 9 of 51
+ホスト間通信仕様
+本章では、ホストと NFC Port-400 間の通信仕様について説明します。
+2.1 UART インターフェース
+NFC Port-400 では、ホストとのインターフェースとして UART を持ちます。
+UART インターフェースのデフォルトコンフィギュレーションを表 2-1 に示します。
+表 2-1 : UART デフォルトコンフィギュレーション
+項目 値
+Data bit 8 ビット
+Parity bit None
+Stop bit 1 ビット
+Baud rate 115,200 bps
+Data order LSB first
+通信速度は、Set Serial Baudrate コマンドによって、以下の 7 種類から選択することができます。
+• 9,600 bps
+• 19,200 bps
+• 38,400 bps
+• 57,600 bps
+• 115,200 bps
+• 230,400 bps
+• 460,800 bps
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 10 of 51
+2.2 通信シーケンス
+ホストコントローラーと NFC Port-400 間の通信は、ホストパケットを用いたパケット通信で行われます。
+NFC Port-400 は、ホストコントローラーから受信したホストコマンドパケットを処理し、ホストレスポン
+スパケットを返信します。NFC Port-400 が自発的にホストコントローラーにホストレスポンスパケットを
+送信することはありません。
+2.3 ホストパケット フォーマット
+ホストパケットのフォーマットにはコマンドフレームと ACK フレームの 2 種類が定義されています。
+2.3.1 コマンドフレーム
+ホストコントローラーと NFC Port-400 間の通信で、パケットデータのバイト数が 277 バイト以下のホスト
+コマンドパケットおよびホストレスポンスパケットのやり取りを行うためのフレームです。ホストはホスト
+コマンドパケット送信時に図 2-1 に示す通信パケット構成で送る必要があります。また NFC Port-400 もホ
+ストレスポンスパケット返送時には同様の通信パケット構成を使用します。
+00h 00FFh LEN LCS PD0 PD1 … PDn DCS 00h
+プリアンブル
+スタートコード
+パケットデータ長
+パケットデータ長チェックサム
+パケットデータ
+パケットデータチェックサム
+ポストアンブル
+図 2-1 : 通信パケット
+
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 11 of 51
+表 2-2 : 通信パケット構成
+名称 バイト数 データ 補足
+プリアンブル 1 00h
+スタートコード 2 00FFh
+パケットデータ長 2 LEN ビッグエンディアン
+0000h ≦ LEN ≦ 0115h
+0115h バイト以上が指定された場合
+は、0115h バイトと見なされる。
+パケットデータ長チェックサム 1 LCS
+パケットデータ LEN CCID コマンド(ヘッダー+データ)
+パケットデータチェックサム 1 DCS
+ポストアンブル 1 00h
+2.3.2 パケット構造と処理
+パケットは大きく分けて以下のブロックで構成されます。
+• プリアンブル
+o パケットの先頭 1 バイトをプリアンブルと呼びます。
+• スタートコード
+o プリアンブルに続く 00h と FFh の 2 バイトをスタートコードと呼びます。
+o NFC Port-400 は有効なスタートコードを検出してからパケットの受信処理を開始します。
+• ヘッダー
+o スタートコードに続く、パケットデータのバイト長 LEN とその LEN のチェックサムデータ LCS を、
+ヘッダーと呼びます。
+o 有効なヘッダーの LEN と LCS は、以下の関係が成立します。
+ [LEN（上位バイト）＋LEN（下位バイト）＋LCS]の下位 1 バイト＝00h
+o NFC Port-400 は有効なヘッダーを検出しなかった場合、パケットの受信処理を中止し、プリアンブ
+ルの受信処理に戻ります。
+• パケットデータ
+o パケット本体のデータです。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 12 of 51
+o パケットヘッダーの LEN で指定されたバイト長のデータとなります。PD0,PD1,…,PDnｈそれぞれ 1
+バイトです。
+o パケットデータには CCID コマンドを設定します。
+設定可能な CCID コマンドについては、「2.4 CCID コマンド」を参照してください。
+• パケットデータチェックサム
+o パケットデータの誤り検出のためのチェックサムデータ DCS をパケットデータチェックサムと呼び
+ます。
+o 有効なパケットデータと DCS は以下の関係が成立します。
+ [PD0 + PD1 + … + PDn + DCS]の下位 1 バイト = 00h
+o NFC Port-400 は有効なパケットデータチェックサムを検出しなかった場合、パケットの受信処理を
+中止し、プリアンブルの受信処理に戻ります。
+• ポストアンブル
+o パケットデータチェックサムのあとの 1 バイトデータです。
+o NFC Port-400 はポストアンブルの受信によって、パケットの受信処理を完了します。
+NFC Port-400 のデータリンクレベルの解析は、スタートコードの受信後から開始します。データリンクレ
+ベルのエラーには、以下のものがあります。
+• LCS エラー
+o LEN（上位バイト）＋LEN（下位バイト）＋LCS の下位 1 バイトが 00h でないとき
+• DCS エラー
+o PD0 ＋…＋ PDn ＋ DCS の下位１バイトが 00h でないとき
+• タイムアウトエラー
+o スタートコードを検出してから、ポストアンブルを検出するまでの時間が制限時間を超えているとき
+（データリンクレベルのタイムアウト設定を表 2-3 に示します。）
+• フレーミングエラー
+o ストップビットの受信値が 0 のとき
+NFC Port-400 がパケットの受信中にデータリンクレベルでのエラーを検出した場合、プリアンブルの受信
+待ち状態に戻り、残りのパケットに対してプリアンブルの検出を行います。そのため、コントローラーから
+見て無応答状態になります。
+この場合、ホストはコマンドパケットを再送してください。再送は、表 2-3 に示すタイムアウト時間を経過
+後に行ってください（図 2-2 参照）。タイムアウト時間内に再送を行った場合、NFC Port-400 は直前のコ
+マンドパケットの続きと認識し、再送パケットを正しく受信できない場合があります。また、スタートコー
+ドが 1000 ms 以上検出されない場合には、再度プリアンブルの検出を行います。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 13 of 51
+Host NFC Port-400
+Command Packet
+Command Packet(再送)
+データリンクレベルの
+タイムアウト値
+10 ms 以上無応答
+図 2-2 : コマンドパケットの再送
+
+表 2-3 データリンクレベルのタイムアウト設定
+通信ボーレート(bps) タイムアウト設定時間(ms)
+9600 1067
+19200 533
+38400 267
+57600 178
+115200 89
+230400 44
+460800 22
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 14 of 51
+2.3.3 ACK フレーム
+本フレームは、以下の目的で使用されます。
+• NFC Port-400 がホストコントローラーへ送信する場合
+o NFC Port-400 がホストコマンドパケットを受信時にデータリンクレベルの誤りを検出しなかった
+場合。
+注記 上記の目的以外で、NFC Port-400 がホストコントローラーへ ACK フレームを送信することは
+ありません。
+• ホストコントローラーが NFC Port-400 へ送信する場合
+o ホストコマンドの実行結果を確定する場合（Reset Device コマンドと Power Down コマンドで必
+須）。
+注記 上記の目的以外でホストコントローラーが NFC Port-400 へ ACK フレームを送信すると、NFC
+Port-400 はそれを無視します。
+以下に ACK フレームのパケット構成を示します。
+00h 00FFh 0000h FFh 00h
+プリアンブル
+スタートコード
+パケットデータ長
+パケットデータ長チェックサム
+ポストアンブル
+図 2-3 : ACK フレーム
+表 2-4 : ACK フレーム構成
+名称 バイト数 データ
+プリアンブル 1 00h
+スタートコード 2 00FFh
+パケットデータ長 2 0000h
+パケットデータ長チェックサム 1 FFh
+ポストアンブル 1 00h
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 15 of 51
+以下に、ホストと NFC Port-400 間のパケット通信の例を示します。
+Host NFC Port-400
+Command Packet
+Response Packet
+Response Time
+Max: 10 ms
+ACK
+図 2-4 : パケット通信例
+NFC Port-400 は、コマンドパケットを正常に受信すると 10 ms 以内に ACK フレーム返送を開始します。
+その後ホストコマンドの処理が終了した後にレスポンスパケットを返送します。
+一部の APDU コマンド「4.11 Reset Device」と「4.13 Power Down」については、コマンドパケット受信
+時にホストからの ACK の返送が必要です。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 16 of 51
+2.4 CCID コマンド
+NFC Port-400 は USB/UART でコマンドを共通化するために CCID コマンドを使用します。UART の場合、
+CCID コマンドをコマンドフレームのパケットデータ部として使用します。NFC Port-400 での CCID コマン
+ドのサポート状況を表 2-5 に示します。レスポンスの形式の詳細や、コマンドやレスポンスの説明に出てく
+る各フィールド名の詳細については、CCID の仕様書を参照してください。
+以降、サポートコマンドについて詳細を説明します。
+表 2-5：CCID コマンドのサポート状況
+凡例：
+Y：NFC Port-400 で対応するコマンド
+N：NFC Port-400 で対応しないコマンド
+# コマンド名 サポート状況
+1 PC_to_RDR_lccPowerOn N
+2 PC_to_RDR_lccPowerOff N
+3 PC_to_RDR_GetSlotStatus N
+4 PC_to_RDR_XfrBlock N
+5 PC_to_RDR_GetParameters N
+6 PC_to_RDR_ResetParameters N
+7 PC_to_RDR_SetParameters N
+8 PC_to_RDR_Escape Y
+9 PC_to_RDR_IccClock N
+10 PC_to_RDR_T0APDU N
+11 PC_to_RDR_Secure N
+12 PC_to_RDR_Mechanical N
+13 PC_to_RDR_Abort Y
+14 PC_to_RDR_SetDataRateAndClockFrequency N
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 17 of 51
+2.4.1 PC_to_RDR_Escape
+カードの状態に依存せず、NFC Port-400 に任意の APDU コマンドを送信できます。
+Offset Field Size Value Description
+0 bMessageType 1 6Bh PC_to_RDR_Escape を表す
+1 dwLength 4 XXh abData のサイズ
+リトルエンディアン
+5 bSlot 1 00h スロット番号
+6 bSeq 1 XXh シーケンス番号
+7 abRFU 3 RFU (000000h) Reserved
+10 abData Byte
+Array
+XXh データブロック
+「4 APDU コマンド仕様」で定義された APDU
+コマンドデータ。
+本コマンドのレスポンスは RDR_to_PC_Escape です。
+Offset Field Size Value Description
+0 bMessageType 1 83h RDR_to_PC_Escape を表す
+1 dwLength 4 XXh データサイズ
+5 bSlot 1 XXh PC_to_RDR_Escape で指定されたスロット番号
+6 bSeq 1 XXh PC_to_RDR_Escape で指定されたシーケンス番号
+7 bStatus 1 XXh 「2.4.3 Status およびエラーコード」参照
+8 bError 1 XXh 「2.4.3 Status およびエラーコード」参照
+9 bRFU 1 00h Reserved
+10 abData N 1) XXh PC_to_RDR_Escape で送信された PC/SC、APDU
+コマンドのレスポンスデータ。
+1) コマンドのレスポンス長に依存
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 18 of 51
+2.4.2 PC_to_RDR_Abort
+このコマンドは、現在 NFC Port-400 が実行中のコマンドを中断することができます。このコマンドを送信
+した場合、実行中のコマンドのレスポンスは返却されません。CCID の仕様書に記載されている
+PC_to_RDR_Abort とは使用方法が異なるため注意してください。
+Offset Field Size Value Description
+0 bMessageType 1 72h PC_to_RDR_Abort を表す
+1 dwLength 4 00000000h abData のサイズ
+5 bSlot 1 00h スロット番号
+6 bSeq 1 XXh シーケンス番号
+7 abRFU 3 RFU (000000h) Reserved
+本コマンドのレスポンスは RDR_to_PC_SlotStatus です。
+Offset Field Size Value Description
+0 bMessageType 1 81h RDR_to_PC_SlotsStatus を表す
+1 dwLength 4 00000000h データサイズ
+5 bSlot 1 XXh PC_to_RDR_Escape で指定されたスロット番号
+6 bSeq 1 XXh PC_to_RDR_Escape で指定されたシーケンス番号
+7 bStatus 1 XXh 「2.4.3 Status およびエラーコード」参照
+8 bError 1 XXh 「2.4.3 Status およびエラーコード」参照
+9 bRFU 1 00h 00h:Clock running（固定値）
+PC_to_RDR_Abort を用いたコマンドの中断シーケンスを図 2-5 に示します。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 19 of 51
+Host NFC Port-400
+Command Packet#1
+ACK
+ACK
+Command Packet#2
+(PC_to_RDR_Abort)
+Response Packet#2
+図 2-5 : コマンド中断シーケンス
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 20 of 51
+2.4.3 Status およびエラーコード
+各コマンドレスポンスにおける、スロットステータス bStatus のビットアサイン仕様は以下のとおりです。
+Bit Field Size
+（bit）
+Value Description
+0-1 bmICCStatus 2 2 固定値
+2-5 bmRFU 4 0 固定値
+6-7 bmCommandStatus 2 0,1 コマンドステータス
+0：エラーなし
+1：失敗（bError で詳細を示す）
+各コマンドレスポンスにおけるエラーコード bError は、以下の値がセットされます。
+Error Code
+decimal Hex Error Name Description
+-127 81 CMD_NOT_ABORTED コマンド中断処理が失敗した
+-32 E0h CMD_SLOT_BUSY コマンド処理中に、さらにコマンドを受信した
+0 00h Command not supported 未サポートコマンドを受信した
+1 01h Bad dwLength dwLength 不正
+5 05h bSlot does not exist bSlot に 0 以外の値が指定された
+
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 21 of 51
+2.4.4 その他エラー
+ホストから送信される CCID コマンドの bMessageType が不正の場合、以下のレスポンスを返却します。
+RDR_to_PC_DataBlock
+Offset Field Size Value Description
+0 bMessageType 1 80h RDR_to_PC_DataBlock
+1 dwLength 4 00000000h データサイズ
+5 bSlot 1 00h スロット番号
+6 bSeq 1 XXh シーケンス番号
+7 bStatus 1 42h bmCommandStatus=1 (Failed)
+bmICCStatus=2
+8 bError 1 00h Command not supported
+9 bChainParameter 1 00h
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 22 of 51
+NFC 通信仕様
+NFC Port-400 が制御する NFC 通信仕様は、以下のとおりです。
+表 3-1：NFC Port-400 の NFC 通信仕様
+項目 説明 データ転送速度 [kbps]
+通信方式 ISO/IEC 14443 Type A（以降、Type A とも表記します） 106、212、424、848
+ISO/IEC 14443 Type B（以降、Type B とも表記します） 106、212、424、848
+FeliCa 212、424
+ISO/IEC 15693-3（以降、Type V とも表記します） 26
+搬送波周波数(fc) 13.56 MHz -
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 23 of 51
+APDU コマンド仕様
+本章では、NFC Port-400 が備えるコマンドについて説明します。
+4.1 コマンド一覧
+NFC Port-400 がサポートするコマンドは、以下のとおりです。
+1) APDU コマンド
+PC_to_RDR_Escape を利用して、NFC Port-400 をローレベル制御する際に使用します。
+o PC/SC 2.0 Part.3 Rev.2.01.09
+o PC/SC 2.0 Part.3 Rev.2.01.09 amendment
+o PC/SC 2.0 Part.3 Rev.2.01.09 Supplimental2
+以下に、取り扱うコマンドの一覧を示します。
+分類 名称 CLA INS 機能/備考
+PC/SC Part3 Load Keys FF 82 認証鍵の登録
+General Authenticate FF 86 カードとの認証処理
+PC/SC Part3
+Supplemental2
+Manage Session FF C2 P2=00: Manage Session Command
+Transparent Exchange FF C2 P2=01: Transparent Exchange
+Command
+Switch Protocol FF C2 P2=02: Switch Protocol Command
+Reset Device FF 55 デバイスリセット
+Get Firmware Version FF 56 ファームウェアバージョン、ブートローダ
+バージョン
+Power Down FF 72 省電力モード遷移
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 24 of 51
+4.2 状態別 APDU コマンド実行可否
+NFC Port-400 の内部状態および各状態における APDU コマンドの使用可否について、以下に説明します。
+1) 通常状態
+NFC Port-400 起動後の状態です。
+2) Transparent 状態
+Transparent に入る APDU コマンドを受信することで Transparent 状態になります。
+状態別 APDU コマンド使用可否表を以下に示します。
+凡例：
+Y：使用可能
+N：エラー返却
+コマンド名 1) 2)
+Load Keys Y Y
+General Authenticate N Y
+Manage Session Y Y
+Transparent Exchange N Y
+Switch Protocol N Y
+Reset Device Y Y
+Get Firmware Version Y Y
+Power Down Y Y
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 25 of 51
+4.3 代表的なシーケンス
+カードと通信を行う代表的なシーケンスは以下のとおりです。
+1) Start Transparent Session
+2) SwitchProtocol (TypeA/B/F)
+3) Transmission and Reception Flag などでフラグ設定 (カードコマンドに依存)
+4) RF On
+5) Transceive(Transmit/Receive)でカードコマンドを送受信
+6) RF Off
+7) End Transparent Session
+4.4 APDU エラーステータス
+以下に、コマンド共通のエラーステータスおよびコマンド固有のエラーステータスについて説明します。
+【コマンド共通のエラーステータス】
+SW1 SW2 説明
+90 00 正常終了
+62 82 Le で指定した値より、レスポンス長の方が短い
+64 01 カードからの応答がない
+67 00 長さ不正(Lc 不正)
+エラー例)
+• 4 バイト以下の短いコマンドの場合(CLA、CLA+INS、CLA+INS+P1)
+• Lc で指定したデータ長と Data In の長さが異なる
+• Lc が固定のコマンド(General Authenticate など)で固定値以外の値がセットされた場合
+68 00 CLA が不正
+69 81 Data In が不正
+エラー例)
+• Data In が不要なコマンド(Get Data など)だが Data In が付いている
+• Data In の内容がおかしい
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 26 of 51
+SW1 SW2 説明
+69 85 状態不正(システム状態によりコマンドを受け付けられないなど)
+エラー例）
+• Transparent 状態での Set RF Speed
+6A 81 INS の値が不正
+エラー例)
+• 未定義 INS を指定したとき
+6B 00 P1、P2 の値が不正
+エラー例)
+• Load Keys で P1 に 00 以外の値を設定
+6C XX Le の値が不正
+SW2=XX は実際のレスポンスデータ長を示す（FFh を超える場合は、XX=00h とする）
+エラー例）
+• Le で設定した値よりレスポンス長が長い場合
+ 例えば、実際のレスポンス長が４だが、4 より小さい値が指定された場合には 6C 04 が返る
+6F 00 予期せぬエラー
+エラー例）
+• レスポンスに対して内部バッファーが不足(メモリー不足)
+【コマンド固有のエラーステータス】
+コマンド SW1 SW2 説明
+Load Key 69 88 Key Number 不正
+69 89 Key Length 不正
+General Authenticate 69 83 認証失敗
+69 86 Key Type 不正
+69 88 Key Number 不正
+【Manage Session / Transparent Exchange / Switch Protocol のレスポンス構造】
+上記 3 コマンド(PCSC ManageSessionCommand)のレスポンス構造は、以下のようになっています。
+Data Field BER-TLV には Tag=C0h（Generic error status）以外に、各コマンドで定義する TLV 構造の
+Data object が入ります。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 27 of 51
+レスポンス構造
+Data Field BER-TLV SW1 SW2
+XXh (以下参照) XXh
+【コマンド共通のエラーステータス】参照
+XXh
+【コマンド共通のエラーステータス】参照
+Data Field BER-TLV
+Tag Length Value
+C0h 03h Error Status
+Error Status (XX は該当するタグの指定番号)
+Error
+Status
+説明
+00 90 00 正常終了
+XX 62 82 Le で指定した値より、レスポンス長の方が短い
+XX 63 00 カードまたは NFC Port-400 との通信異常
+エラー例)
+• カードからの応答データが壊れている
+• NFC Port-400 の RF On/Off 処理で失敗
+XX 63 01 指定された Data Object 間の実行順に不正があった場合
+エラー例)
+• Manage Session で Start Transparent Session を実行前に Turn ON the RF を実行するよう
+に指定があった場合
+• カード未設置またはカード捕捉状態でない場合にカードに対するコマンドを送った場合
+XX 64 01 カードからの応答がない
+XX 67 00 Data Object の長さ不正
+エラー例)
+• Manage Session の Start Transparent Session で Length に 0 以外を指定
+• Manage Session の Version Data で Length に 3 以外を指定
+XX 69 8A Start Transparent Session の 2 重呼び出しエラー
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 28 of 51
+Error
+Status
+説明
+XX 6A 80 Data Object の中の Tag の TLV 形式不正
+エラー例)
+• Transparent Exchange の Transmission Bit Framing で指定するデータの RFUbit に 0 以外
+を指定したとき
+• get/set parameters の TLV で不正があった場合(Length 不正含む)
+XX 6A 81 Data Object の中で未定義の Tag を使用
+XX 6F 00 予期せぬエラー
+エラー例）
+• レスポンスに対して内部バッファーが不足(メモリー不足)
+エラー例)
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 29 of 51
+4.5 Lc、Le 設定とレスポンス仕様
+APDU コマンドの Lc、Le 仕様について説明します。
+Lc 凡例
+(仕様書上の表記)
+コマンド投下時の Lc 有無状態 レスポンス結果 [SW1 SW2]
+(Lc 以外のエラー要因がない場合）
+XXh（Data In あり） Lc フィールドあり 正常終了 [90 00]
+Lc フィールドなし エラー [69 81]
+－（Data In なし） Lc フィールドあり エラー [69 81]
+Lc フィールドなし 正常終了 [90 00]
+Le 凡例
+(仕様書上の表記)
+コマンド投下時の Le 状態 レスポンス結果 [SW1 SW2]
+（Le 以外のエラー要因がない場合）
+XXh（レスポンスデータあり） Le とレスポンスデータ長が等しい
+（Le == レスポンス長）
+正常終了 [90 00]
+Le がレスポンスデータ長より小さい
+（Le ＜ レスポンス長）
+エラー [6C XX]
+(XX = 実際のレスポンスデータ長)
+Le がレスポンスデータ長より大きい
+（Le ＞ レスポンス長）
+警告 [62 82]
+Le の値が 00h 正常終了 [90 00]
+Le フィールドなし 正常終了 [90 00]
+－（レスポンスデータなし） Le フィールドあり 正常終了 [90 00]
+Le フィールドなし 正常終了 [90 00]
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 30 of 51
+4.6 Load Keys
+【機能】
+本コマンドは、NFC Port-400 に MIFARE Classic カードの認証鍵を登録します。本コマンドで登録した
+MIFARE 認証鍵は、General Authenticate で使用します。本コマンドは、カードの未捕捉でも実行可能で
+す。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh 82h 00h XXh XXh XXh -
+【構成詳細】
+P2/Lc/Data In:
+P2 Lc Data In
+Key Number
+鍵番号: 0、1
+Key Length
+MIFARE Classic カード認証鍵長: 6
+Key
+MIFARE Classic カード認証鍵
+【レスポンス】
+Data Out
+SW1 SW2
+SW1 SW2：
+「4.4 APDU エラーステータス」の共通エラーステータスおよびコマンド固有エラーを参照してくださ
+い。
+【注意事項】
+本コマンドで登録した MIFARE Classic カード認証鍵は、NFC Port-400 の電源 OFF、Reset Device で破棄
+します。
+
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 31 of 51
+4.7 General Authenticate
+【機能】
+本コマンドは、MIFARE Classic カードの指定ブロックと認証を行います。認証を行うには、事前に Load Keys
+コマンドで MIFARE Classic カード認証鍵を登録する必要があります。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh 86h 00h 00h 05h XXh -
+【構成詳細】
+Data In:
+対応カード DataIn[0] DataIn[1] DataIn[2] DataIn[3] DataIn[4]
+MIFARE
+Classic
+MIFARE Plus
+SL2
+RFU Address MSB Address LSB Key Type
+MIFARE KEY_A: 0x60
+MIFARE KEY_B: 0x61
+Key Number
+Load Keys で指定
+した鍵番号：0、1 認証対象ブロック
+【レスポンス】
+Data Out
+SW1 SW2
+SW1 SW2：
+「4.4 APDU エラーステータス」の共通エラーステータスおよびコマンド固有エラーを参照してくださ
+い。
+【注意事項】
+MIFARE Plus SL2 の AES 認証には対応していません。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 32 of 51
+4.8 Manage Session
+【機能】
+本コマンドは、Transparent Session の開始、終了、および NFC Port-400 の通信設定を行います。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh C2h 00h 00h XXh Data Object XXh
+【構成詳細】
+Command Data Object 一覧:
+Tag Data Object Length Value 説明
+80h Version data object 03h RFU バージョンの取得
+81h Start Transparent Session 00h - Transparent Session の開始
+82h End Transparent Session 00h - Transparent Session の終了
+83h Turn Off RF Field 00h - RF 出力を OFF する
+84h Turn On RF Field 00h - RF 出力を ON する
+5F46h Timer 04h μs 単位
+(リトルエンディアン)
+Value で指定した期間、遅延する
+（実施の精度は ms です）
+FF6Dh Get Parameters XXh TLV Data Object 通信パラメーターの取得
+FF6Eh Set Parameters XXh TLV Data Object 通信パラメーターの設定
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 33 of 51
+Get Parameters data object 一覧:
+Tag Length Value 説明
+01h 00h - FSDI:ISO/IEC 14443-4 でのリーダー／ライターのフレームサイズ
+(初期値 0x08)
+02h 00h - FSCI:ISO/IEC 14443-4 での現在捕捉中のカードのフレームサイズ 1)
+(カード未捕捉時は 0x00)
+(Set Parameters data object で変更できません)
+03h 00h - FWTI:ISO/IEC 14443-4 でのカードのフレーム待ち時間 2)
+(初期値 0x08)
+04h 00h - NFC Port-400 がサポートする最大通信速度（通信速度定義参照）
+(0x1B 固定 Set Parameters data object で変更不可)
+05h 00h - カードとの現在の通信速度（通信速度定義参照）3)
+(カード捕捉時のみ参照可能。
+カード未捕捉状態ではエラーレスポンス[63 01]を返却)
+08h 00h - CID:ISO/IEC 14443-4 で使用する CID (デフォルト 0x01) 4)
+1) Type A/B のカード捕捉後はカードの FSCI を返します。
+2) Switch Protocol の Layer4 などでカード Activate された場合にはカードの FWTI が返ります。
+Get Parameters の実行前に、Set Parameters された場合にはセットした値が返ります。
+3) 設定された通信速度は即時反映されます。
+Switch Protocol で Layer4 を指定した際には、Set RF Speed で設定した速度が上限になります。
+Type V は 26.48 kbps 固定のため指定不可です。
+4) Switch Protocol で Layer4 に指定した場合、または Transparent Exchange で Transmission and Reception
+Flag のビット 4 を 1 にして任意のコマンドを送る場合に、設定した値が反映されます。
+Set Parameters data object 一覧:
+Tag Length Value 説明
+01h 01h FSDI FSDI:ISO/IEC 14443-4 での、リーダー／ライターのフレームサイズ
+(未設定時の初期値 0x01)
+03h 01h FWTI FWTI:ISO/IEC 14443-4 での、カードのフレーム待ち時間を表す整数
+(未設定時の初期値 1000 ms)
+05h 01h 通信速度 カードと通信する際の PCD の通信速度（通信速度定義参照）
+08h 01h CID ISO/IEC 14443-4 で使用する CID
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 34 of 51
+フレームサイズ（FSCI/FSDI）定義:
+FSCI/FSDI 0 1 2 3 4 5 6 7 8 >8
+フレームサイズ 16 24 32 40 48 64 96 128 256 RFU
+通信速度定義:
+b7 b6 b5 b4 b3 b2 b1 b0
+0 = 送受信の速度が異
+なる場合をサポート
+1 = 送受信で同じ速度の
+みサポート
+RFU (0) RFU (0) 送信速度指定（NFC
+Port-400→カード）
+00b = 106 kbps
+01b = 212 kbps
+10b = 424 kbps
+11b = 848 kbps
+RFU (0) 受信速度指定（カード→
+NFC Port-400）
+00b = 106 kbps
+01b = 212 kbps
+10b = 424 kbps
+11b = 848 kbps
+【レスポンス】
+Response Data SW1 SW2
+Response Data Objects 90h 00h
+Response Data Object：
+「4.4 APDU エラーステータス」の Manage Session / Transparent Exchange / Switch Protocol のレス
+ポンス構造を参照してください。
+Tag 種別 Length Value
+C0h Generic error status 03h 「4.4 APDU エラーステータス」の Manage Session /
+Transparent Exchange / Switch Protocol のレスポン
+ス構造 Error Status を参照
+80h Version data objects 03h バージョン情報
+FF6Dh IFD parameter data object XXh Set Parameters data object の内容と同じ
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 35 of 51
+4.9 Transparent Exchange
+【機能】
+本コマンドは、Transparent Session でカードと任意のデータを送受信します。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh C2h 00h 01h XXh Data Objects XXh
+【構成詳細】
+Command Data Object 一覧:
+Tag Data Object Length Value 説明
+90h Transmission and Reception
+Flag
+02h 送受信処理
+フラグ
+送受信処理フラグ定義参照
+91h Transmission Bit framing 01h 有効ビット数 送信データ最終バイト有効ビット数定
+義参照
+92h Reception Bit framing 01h 有効ビット数 受信データ最終バイト有効ビット数定
+義参照
+93h Transmit XXh 送信データ 指定データを送信する（受信処理なし）
+94h Receive 00h - 受信処理（送信処理なし）
+95h Transceive
+(Transmit and Receive)
+XXh 送信データ データ送信後受信開始
+5F46h Timer 04h μs 単位
+(リトルエンデ
+ィアン)
+Timer 直後に指定する Data Object が
+Receive、Transceive の場合：
+受信待ちタイムアウト時間
+上記以外の場合：
+Value で指定した期間、遅延する
+実施の精度は ms です。
+FF6Dh Get Parameters XXh TLV Data
+Object
+「4.8 Manage Session」参照
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 36 of 51
+Tag Data Object Length Value 説明
+FF6Eh Set Parameters XXh TLV Data
+Object
+「4.8 Manage Session」参照
+Transmission and Reception Flag 送受信処理フラグ定義:
+Tag Length Value (b15～b0)
+bit Description
+90h 02h 0 0:送信データに CRC を付加する。
+1:送信データに CRC を付加しない。(デフォルト)
+1 0:受信データから CRC を取り除く。
+1:受信データから CRC を取り除かない。(デフォルト)
+2, 3 現在のテクノロジーに従って、
+0、1、2: 送信データにパリティーを挿入する。
+受信データのパリティーを取り除く。
+3: 送信データにパリティーを挿入しない。
+受信データのパリティーを取り除かない
+デフォルト値は、Type A カードは 0、その他は 3 です。
+4 Protocol Prologue（ISO/IEC 14443-4 の PCB、CID、NAD）の自動処理設定。
+Transceive の動作に反映する。
+0:Protocol Prologue を自動処理する
+1:Protocol Prologue を自動処理しない。(デフォルト)
+5～15 RFU。0 を指定してください。
+Transmission Bit framing 送信データ最終バイト有効ビット数定義:
+Tag Length Value
+bit Description
+91h 01h 0～2 最後のバイトの有効ビット数（0 の場合は全ビット有効）
+3～7 RFU であり、0 を設定しなければならない。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 37 of 51
+Reception Bit framing 受信データ最終バイト有効ビット数定義:
+Tag Length Value
+bit Description
+92h 01h 0～2 最後のバイトの有効ビット数（0 の場合は全ビット有効）。
+3～7 RFU であり、0 を設定しなければならない。
+【レスポンス】
+Response Data SW1 SW2
+Response Data Object 90h 00h
+Response Data Objects：
+APDU の Manage Session / Transparent Exchange / Switch Protocol レスポンス構造に従って配置し
+ます。カードから受信データが得られた場合は Receive（Tag=94h）、Transceive（Tag=95h）1 つずつに
+対して、Number of valid bits（Tag=92h）、Response Status（Tag=96h）、ICC Response（Tag=97h）
+がレスポンスとして返ります。
+Tag 種別 Length Value
+C0h Generic error status 03h 「4.4 APDU エラーステータス」の
+Manage Session / Transparent
+Exchange / Switch Protocol のレス
+ポンス構造 Error Status を参照
+92h Number of valid bits in the last byte of
+received data
+01h 受信データ最終バイト有効ビット数定
+義参照
+96h Response Status 02h 1 バイト目: 受信ステータス
+2 バイト目: RFU
+97h ICC Response XXh カードからの受信データ
+FF6Dh IFD parameter data object XXh 「4.8 Manage Session 」の Set
+Parameters data object 参照
+
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 38 of 51
+4.10 Switch Protocol
+【機能】
+本コマンドは、Transparent Session で使用するテクノロジーの指定、カードの捕捉を行います。
+Switch Protocol Data Object を指定した場合、カードの捕捉状態によらず RFOff→RF On を行った後に指
+定 Layer の動作を行います。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh C2h 00h 02h XXh Data Objects XXh
+【構成詳細】
+Command Data Object 一覧:
+Tag Data Object Length Value
+8Fh Switch Protocol Data Object 02h 1 バイト目: Standard type 定義
+2 バイト目: Layer 定義
+FF6Dh Get Parameters XXh 「4.8 Manage Session」参照
+FF6Eh Set Parameters XXh 「4.8 Manage Session」参照
+Switch Protocol Data Object:
+テクノロジー Standard
+Type
+Layer 説明
+Type A 00h 02h Type A 通信用に設定します
+03h Type A 通信用に設定し、WUPA、SELECT を実行します
+04h Type A 通信用に設定し、WUPA、SELECT、RATS、PPS を実
+行します
+Type B 01h 02h Type B 通信用に設定します
+03h Type B 通信用に設定し、WUPB を実行します
+04h Type B 通信用に設定し、WUPB、ATTRIB を実行します
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 39 of 51
+テクノロジー Standard
+Type
+Layer 説明
+Type V 02h 02h Type V 通信用に設定します
+03h Type V 通信用に設定し、Inventory を実行します
+FeliCa 03h 00h FeliCa 通信用に設定します
+01h FeliCa 通信用に設定し、Polling を実行します
+【レスポンス】
+Response Data SW1 SW2
+Response Data Object 90h 00h
+Response Data Objects：
+Tag 種別 Length Value
+C0h Generic error status 03h 「4.4 APDU エラーステータス」の Manage Session /
+Transparent Exchange / Switch Protocol のレスポ
+ンス構造 Error Status を参照
+8Fh Switch Protocol Response 01h Final SAK
+（Type A Layer3 指定時）
+03h Protocol info 1st-3rd byte
+（Type B Layer3 指定時）
+5F51h ATR XXh ATR（「A.2 ATR データ詳細」参照）
+（Type A Layer4、Type B Layer4 指定時）
+FF6Dh IFD parameter Data Object XXh 「4.8 Manage Session」の Set Parameters data
+object 参照
+
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 40 of 51
+4.11 Reset Device
+【機能】
+本コマンドは、NFC Port-400 をリセットします。
+この処理は、NFC Port-400 がホストにレスポンスパケットを返信した後、次の ACK を受信した際に実行さ
+れます。ACK を受信する前にホストコマンド受信した場合、本コマンドの結果は破棄されます。
+処理実行時には、NFC Port-400 をリセットし、ACK 受信からリセット実行までは RF を OFF にします。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh 55h 00h 00h - - -
+【構成詳細】
+なし
+【レスポンス】
+Data Out
+SW1 SW2
+SW1/SW2:
+「4.4 APDU エラーステータス」の共通エラーステータスを参照してください。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 41 of 51
+4.12 Get Firmware Version
+【機能】
+本コマンドは、以下のパラメーターを取得します。
+• 全体ファームウェアバージョン
+• MCU ファームウェアバージョン
+• SAM ファームウェアバージョン
+• RFFE ファームウェアバージョン
+• RFFE EEPROM バージョン
+• ブートローダバージョン
+• ファームウェア更新状態
+• 起動状態
+SAM など、本製品では搭載されていないファームウェアのバージョンは FFFFh となります。また、バージ
+ョンが取得できない場合は FFFFh を返します。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh 56h 00h 00h - - XXh
+【レスポンス】
+Data Out
+Data SW1 SW2
+
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 42 of 51
+Data:
+パラメーター名 サイズ
+(バイト)
+説明
+全体ファームウェアバージョン 4 全体ファームウェアバージョン
+MCU ファームウェアバージョン 2 MCU ファームウェアバージョン
+SAM ファームウェアバージョン 2 SAM ファームウェアバージョン
+RFFE ファームウェアバージョン 2 RFFE ファームウェアバージョン
+(ファームウェア更新中状態の場合は 0xFFFF)
+RFFE EEPROM バージョン 2 RFFE EEPROM バージョン
+ブートローダバージョン 2 ブートローダバージョン
+ファームウェア更新状態 2 FFFFh : ファームウェア非更新
+FFFFh 以外 : ファームウェア更新中（非公開仕様でビットアサ
+イン）
+0001h: MCU 更新中
+0002h: RFFE 更新中
+0004h: SAM 更新中
+0008h: RFFE EEPROM 更新中
+起動状態 2 0:ファームウェア起動
+1:ブートローダ起動
+SW1/SW2:
+「4.4 APDU エラーステータス」の共通エラーステータスを参照してください。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 43 of 51
+4.13 Power Down
+【機能】
+本コマンドでは、NFC Port-400 を一時的にソフトパワーダウンさせ消費電力を抑えることが出来ます。
+NFC Port-400がパワーダウンするタイミングは、NFC Port-400がPower Downレスポンスに対するACK
+を受信した直後となります。ソフトパワーダウン中のNFC Port-400 をウェイクアップさせるには、
+UART 線に1つのライジングエッジを与えてください。
+例）ホストから 1 バイトデータの 01h を送信する。
+ウェイクアップは、Power Down コマンドに対する ACK の受信完了後、10 ms 以上経過した後に行ってく
+ださい。
+また、ウェイクアップをさせてから 20 ms 以上経過してから、次のコマンドを投げるようにしてください。
+ソフトパワーダウン時には、RF が OFF になります。
+【コマンド】
+CLA INS P1 P2 Lc Data In Le
+FFh 72h 00h 00h - - -
+【レスポンス】
+Data Out
+SW1 SW2
+SW1/SW2:
+「4.4 APDU エラーステータス」の共通エラーステータスを参照してください。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 44 of 51
+機能に関する補足事項
+本章では、APDU コマンドで提供する機能に関する補足事項を説明します。
+5.1 Transparent Session
+本機能は、PC/SC Part3 で定義する Transparent Session に対応しています。
+サポートするコマンドと機能は、「4.8 Manage Session」、「4.9 Transparent Exchange」、および「4.10
+Switch Protocol」に記載している範囲です。
+5.1.1 PC/SC 準拠仕様との差異
+以下の仕様は、PC/SC と差異があります。
+• End Transparent Session 実行後、カード検出処理は行いません。その際、RF OFF を行いカードの状
+態は初期化します。
+• Transparent Session のデフォルトのタイムアウト値は 1000 ms です。
+• Switch Protocol Data Object を指定した場合は、カードの捕捉状態によらず RF Off→RF On を行った
+後、指定 Layer の動作を行います。
+5.1.2 注意事項
+Power Down コマンドを、実行すると RF Off によりカードの初期化が発生することがあります。カード通
+信に失敗した場合は、再度 Switch Protocol を実施し、アプリケーションの処理状態と、カードの状態を同
+期してください。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 45 of 51
+状態に関する補足事項
+6.1 コマンドの排他制御
+排他処理は、以下のとおりです。
+1) 状態による排他
+NFC Port-400 の各状態には使用できる APDU コマンド、使用できない APDU コマンドがあります。
+詳細は「4.2 状態別 APDU コマンド実行可否」を参照してください。
+2) CCID 多重コマンドの排他
+ある CCID コマンド実施中（コマンドレスポンスを返す前）に別のコマンドが来た場合、後の CCID コマ
+ンドに対してエラー（CMD_SLOT_BUSY）を返します。このとき、先に来た CCID コマンドは処理を継
+続します。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 46 of 51
+機能制限事項／留意事項
+本章では、機能制限事項および留意事項について説明します。
+7.1 機能制限事項
+バージョン 1.0 では存在しません。
+7.2 留意事項
+1) 各機能については、本製品を適用するシステムにおいて、総合的な機能として問題がないことを充分事
+前確認してご使用ください。
+2) すべてのカードとの通信を保証するものではありません。
+3) すべてのホストとの通信を保証するものでありません。
+4) RF 通信は付近にあるデバイスとの混信による問題が発生する場合があります。通信を意図しないデバイ
+スとは混信の影響がないことを確認して設置しご使用ください。
+5) RF 検知はノイズなどの影響により起きることがあります。よって、上位ソフトウェアを設計する際は RF
+検知した直後の再度の RF 検知において結果が異なる場合があることを考慮してください。
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 47 of 51
+Appendix A レスポンスデータ詳細
+この Appendix では、各 APDU のレスポンスデータの詳細を説明します。
+A.1 Get Data レスポンスデータ詳細
+表 A-1：Get Data レスポンスデータ詳細
+テクノロジー 一般名称 SAK
+１)
+カード
+識別
+ID
+カード名称 カード
+種別
+カード種別
+名称
+ISO/IEC14443-3A MIFARE Classic 1K
+（MIFARE Plus 2K SL1）
+08h 01h MIFARE 1K 01h Type A
+MIFARE Classic 4K
+（MIFARE Plus 4K SL1）
+18h 02h MIFARE 4K
+MIFARE Mini 09h 03h MIFARE Mini
+MIFARE Ultralight 00h 04h MIFARE Ultralight
+MIFARE Plus 2K SL2 10h 08h MIFARE Plus 2K SL2
+MIFARE Plus 4K SL2 11h 09h MIFARE Plus 4K SL2
+MIFARE Emulation 20h 0Ah MIFARE Emulation
+上記以外の
+ISO/IEC14443-3A
+02h 5Fh Type A(Unknown)
+ISO/IEC14443-4A ISO/IEC14443-4A 20h A0h Type A(T=CL) 07h Type
+A(T=CL)
+ISO/IEC14443-3B - - B0h Type B 02h Type B
+ISO/IEC14443-4B - - B4h Type B(T=CL) 08h Type
+B(T=CL)
+FeliCa FeliCa Standard - F0h FeliCa 04h FeliCa
+FeliCa Dual - F1h FeliCa Dual
+FeliCa Lite - F2h FeliCa Lite
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 48 of 51
+テクノロジー 一般名称 SAK
+１)
+カード
+識別
+ID
+カード名称 カード
+種別
+カード種別
+名称
+FeliCa Plug - F3h FeliCa Plug
+ISO/IEC15693 - - E0h Type V 0Bh Type V
+1) SAK はビットアサインで判定するため、複数のカードを示す値の場合は、該当するいずれかのカード種別 ID に
+判定します。
+A.2 ATR データ詳細
+ATR の値は PC/SC Part3 に従います（FeliCa Dual カードを除く）。
+表 A-2：Contactless Smart Cards（ISO/IEC 14443-4 カード）の ATR
+オフセット 値 呼称 説明
+0 3Bh Initial Header
+1 8nh T0 上位ニブル 8：後続は TD1 のみ（後続に TA1,TB1,TC1 はない）
+下位ニブル n：Historical Byte 長
+2 80h TD1 上位ニブル 8：後続は TD2 のみ（後続に TA2,TB2,TC2 はない）
+下位ニブル 0：T=0 の意味
+3 01h TD2 上位ニブル 0：後続に TA3,TB3,TC3 はない
+下位ニブル 1：T=1 の意味
+4～3+n XXh T1～Tk Historical Byte
+ISO/IEC14443A：
+ATS の Historical Byte
+ISO/IEC14443B：
+4 バイト [ATQB の Application Data] +
+3 バイト [ATQB の Protocol Info] +
+1 バイト [ATTRIB の MBLI（上位ニブル）+ RFU0[下位ニブル]
+4+n XXh TCK T0～Tk の XOR 値
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 49 of 51
+表 A-3：Contactless Storage カード（ISO/IEC 14443-4 以外のカード）の ATR
+オフセット 値 呼称 説明
+0 3Bh Initial
+1 8Fh T0 上位ニブル 8：後続は TD1 のみ（後続に TA1,TB1,TC1 はない）
+下位ニブル n：Historical Byte 長
+2 80h TD1 上位ニブル 8：後続は TD2 のみ（後続に TA2,TB2,TC2 はない）
+下位ニブル 0：T=0 の意味
+3 01h TD2 上位ニブル 0：後続に TA3,TB3,TC3 はない
+下位ニブル 1：T=1 の意味
+4～3+n Historical Byte (T1～TK)
+80h - Category indicator byte
+4Fh - Application identifier Presence indicator
+0Ch - RID～RR までの長さ
+A0h RID 5-Byte Registered application provider identifier
+00h
+00h
+03h
+06h
+YYh SS Byte for Standard （PC/SC Part3 Supplemental 参照）
+ISO/IEC14443A -1～3、ISO/IEC14443B -1～3
+ISO/IEC15693-1～3、FeliCa などを表す
+YYYYh NN カード名（2 バイト）
+（PC/SC Part3 Supplemental 参照）
+00000000h RR RFU0（4 バイト）
+4+n XXh TCK T0～Tk の XOR 値
+ Sony Corporation
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編 <簡易版>
+
+Page 50 of 51
+表 A-4：FeliCa Dual カードの ATR
+オフセット 値
+0 3Bh, E7h, 00h, 00h, 81h, 31h, Feh, 33h, 56h, 65h, 6Fh, 5Ah, 31h, 90h, 00h, 3Dh
+
+リーダーモジュール
+NFC Port-400 シリーズ コマンドリファレンスマニュアル UART インターフェース編
+<簡易版> Version 1.0
+2023 年 6 月 初版 セキュアテクノロジー＆ソリューション事業部
+ソニー株式会社
+No. M1215-J01-00
+© 2023 Sony Corporation Printed in Japan

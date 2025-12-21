@@ -159,8 +159,8 @@ def generate_execonf_using_sensormap(conf_path:Path,sensormap_path:Path ,outpath
 
 def sleep(previous_time,sleeping_time):
     """
-    :param previous_time: 前回の処理時刻   
-    :prama sleeping_time: 待機時間
+    :param previous_time: 前回の処理時刻[ns]   
+    :prama sleeping_time: 待機時間[ns]
     """
 
     #ビジーループは良くない.CPU稼働率が94%とか行く
