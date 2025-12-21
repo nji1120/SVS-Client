@@ -29,6 +29,9 @@ class RCS660SManagerTypeA144433A(RCS660SManager):
     def polling(self) -> dict:
         """
         直列度1で17Hzが限度. 6port直列では2~3Hz程度が限度. まあ十分でしょ.
+
+        :return {"id":id}, カードが無いときはNoneになる
+            id:16進数表記のリスト. ISO 14443-3AのUID
         """
 
         # パフォーマンス測定用関数
@@ -43,7 +46,7 @@ class RCS660SManagerTypeA144433A(RCS660SManager):
         # --------------------------------
 
         response=self.__transceive()   
-        # self.end_session()
+        self.end_session()
 
         response={"id":self.__extract_uid(response["apdu"]["response"])}
 
@@ -75,8 +78,9 @@ class RCS660SManagerTypeA144433A(RCS660SManager):
     def __transceive(self)->dict:
         if self.is_debug: print("transceive")
 
+
         # --- 通信速度設定 ---
-        speed_ccid=[]#[0x05, 0x01, 0b10011011] # 通信速度設定 848bps (最速)
+        # speed_ccid=[]#[0x05, 0x01, 0b10011011] # 通信速度設定 848bps (最速)
         
         # --- タイムアウト時間 設定 (公式ドキュメントによると精度は1ms) ---
         timeout_ms = 1 # ms, 3ms未満はIDmを読み取れない. そのため3msが最速設定.
@@ -90,7 +94,7 @@ class RCS660SManagerTypeA144433A(RCS660SManager):
         # --- コマンドフレーム作成 ---
         self.rcs660s.create_command_frame(
             ccid_command=TransparentExchange(
-                data_object_tag=speed_ccid + timer_ccid + polling_ccid
+                data_object_tag=timer_ccid + polling_ccid
             ), is_debug=self.is_debug
         )
 
@@ -107,7 +111,7 @@ class RCS660SManagerTypeA144433A(RCS660SManager):
         """
         resp: Transparent Exchange のレスポンスを想定。
             ... 92 01 00 96 02 00 00 97 10 <16-byte page0/1/2/3> 90 00
-        戻り値: UID を int リスト（7バイト）で返す。
+        戻り値: UID を 16進数表記 リスト（7バイト）で返す。
         見つからない場合はNoneを返す。
         """
         marker = b"\x97\x10"  # ICC Response + length=0x10 (READ 0x30 0x00 の16B)
@@ -118,8 +122,10 @@ class RCS660SManagerTypeA144433A(RCS660SManager):
         data = resp[idx + 2 : idx + 2 + 16]
 
         # Type2 page0 layoutに従い UID 抜き出し (UID0-2, UID3-6)
-        uid_bytes = [data[0], data[1], data[2], data[4], data[5], data[6], data[7]]
-        return uid_bytes
+        index_list=[0, 1, 2, 4, 5, 6, 7]
+        # uid_bytes = [data[0], data[1], data[2], data[4], data[5], data[6], data[7]]
+        uid_bytes_str_list=[f"{data[i]:02X}" for i in index_list]
+        return uid_bytes_str_list
 
 
     # pollingのパフォーマンス測定用関数

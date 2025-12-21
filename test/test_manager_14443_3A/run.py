@@ -47,7 +47,7 @@ def main():
         baudrate=conf_rcs660s["baudrate"], 
         timeout_fps=conf_rcs660s["timeout_fps"]
     )
-    rcs660s_manager=RCS660SManagerTypeA144433A(rcs660s=rcs660s,is_debug=False)
+    rcs660s_manager=RCS660SManagerTypeA144433A(rcs660s=rcs660s,is_debug=True)
     rcs660s_manager.setup_device()
 
     # >> 読み取り >>

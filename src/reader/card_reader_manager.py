@@ -48,12 +48,12 @@ class CardReaderManager:
         # RCS660Sの初期化(終わってない場合)
         self.tc4052b=tc4052b
         self.rcs660s_manager=rcs660s_manager
-        if not self.rcs660s_manager.is_setup:
-            ch_tmp=channel_names[0] # とりあえず初期化用のチャンネル選ぶ
-            self.tc4052b.switch_channel(ch_tmp)
-            time.sleep(delta_time)
-            self.rcs660s_manager.reset_device()
-            self.rcs660s_manager.setup_device()
+        if not self.rcs660s_manager.is_setup: # 繋がってるポートみんなresetとsetupする
+            for channel_name in channel_names:
+                self.tc4052b.switch_channel(channel_name)
+                time.sleep(delta_time)
+                self.rcs660s_manager.reset_device()
+                self.rcs660s_manager.setup_device()
 
         self.color_sensor=color_sensor
         self.color_sensor_ir_read_type=color_sensor_ir_read_type
@@ -116,9 +116,9 @@ class CardReaderManager:
         for channel_name in self.channel_names:
             self.tc4052b.switch_channel(channel_name) # RCS660Sのチャンネル選択
             time.sleep(self.delta_time) # ちょっとだけ待つ
-            felica_hex=self.rcs660s_manager.polling()["idm"] # ここで取れるのは16進数表記のバイトごとのリスト
+            id_hex=self.rcs660s_manager.polling()["id"] # ここで取れるのは16進数表記のバイトごとのリスト
             out[channel_name]={
-                "felica":felica_hex
+                "id":id_hex
             }
         return out
 
@@ -146,13 +146,13 @@ class CardReaderManager:
         カードが無いときのphoto diode値をbaselineとして保持する. デフォルトは0.
         :param sensor_values: {
             ch0: {
-                felica: XXXX, 
+                id: XXXX, 
                 color_sensor: {R:XX, G:XX, B:XX, IR:XX}, 
                 photo_diode:XX}
             }, ...
         """
         for ch_name, sensor_dict in sensor_values.items():
-            if sensor_dict["felica"] is None:
+            if sensor_dict["id"] is None:
                 if self.photo_diode_read_type==PhotoDiodeReadType.DIFFERENCE:
                     self.photo_diode_baseline[ch_name]=sensor_dict["photo_diode"]
                 if self.color_sensor_ir_read_type==ColorSensorIRReadType.DIFFERENCE:

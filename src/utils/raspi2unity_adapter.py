@@ -14,7 +14,7 @@ class Raspi2UnityAdapter:
         
         # 内部データのキー変換
         self.key_map = {
-            'card_id': 'felica_id',
+            'card_id': 'id',
             # 他に変換したいキーがあれば追記
         }
 

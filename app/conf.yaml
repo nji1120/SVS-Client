@@ -3,7 +3,8 @@ connection:
   port: 9999
   frequency: 5 #Hz
 
-reader_channels: ["ch5"] # 読み取り対象のチャンネル名
+tag_type: TypeA_14443-3A # タグの種類 {Felica, TypeA_14443-3A}
+reader_channels: ["ch0","ch5"] # 読み取り対象のチャンネル名
 value_stabilizer_trj_seconds: 3 # [s] 値安定化する軌跡の秒数 → この値÷2が反応時間となる
 
 rcs660s:

@@ -22,10 +22,12 @@ class RCS660SManager:
 
 
     def reset_device(self):
+        if self.is_debug: print("RESET DEVICE")
         self.rcs660s.create_command_frame(
             ccid_command=ResetDevice(), is_debug=self.is_debug
         )
         self.rcs660s.send_command_frame()
+        time.sleep(50/1000) #response返るまでちょっと待つ
         self.rcs660s.uart.read(128)
 
     
@@ -45,25 +47,29 @@ class RCS660SManager:
         マルチチャンネルの場合, START_transparent_sessionを毎polling前に実行する必要がある
         (SwitchProtocolは必要ない)
         """
+        if self.is_debug: print("START TRANSPARENT SESSION")
 
+
+        # start transparent sessionにspeedやtimerはいれてはいけない. 順序が不正ですエラーが発生する
         # --- 通信速度設定 --- (意味なし. むしろ遅くなる)
-        speed_ccid=[]#[0xFF, 0x6E, 0x03, 0x05, 0x01, 0b10011011] # 通信速度設定 848bps (最速)
+        # speed_ccid=[]#[0xFF, 0x6E, 0x03, 0x05, 0x01, 0b10011011] # 通信速度設定 848bps (最速)
 
-        # --- タイムアウト時間 設定 (公式ドキュメントによると精度は1ms) ---
-        timeout_ms = 1 # ms, 3ms未満はIDmを読み取れない. そのため3msが最速設定.
-        timer_command=list(int(timeout_ms*1000).to_bytes(4, 'little')) # 待機時間[μs], リトルエンディアン
-        timer_ccid=TransparentExchangeDataObjectTag.TIMER(timer_command)
+        # # --- タイムアウト時間 設定 (公式ドキュメントによると精度は1ms) ---
+        # timeout_ms = 5 # ms, 3ms未満はIDmを読み取れない. そのため3msが最速設定.
+        # timer_command=list(int(timeout_ms*1000).to_bytes(4, 'little')) # 待機時間[μs], リトルエンディアン
+        # timer_ccid=[]#TransparentExchangeDataObjectTag.TIMER(timer_command)
 
 
         # 1) Start Transparent Session
         self.rcs660s.create_command_frame(
             ccid_command=ManageSession(
-                data_object_tag=speed_ccid + timer_ccid + ManageSessionDataObjectTag.START_TRANSPARENT_SESSION
+                data_object_tag=ManageSessionDataObjectTag.START_TRANSPARENT_SESSION
             ), is_debug=self.is_debug
         )
         self.rcs660s.send_command_frame()
 
         response = self.rcs660s.read_response(is_debug=False) # readしとかないと, 次のコマンドで前コマンドの結果が返ってきちゃう
+        if self.is_debug: self.debug_response(response)
        
         # time.sleep(1.0/1000) #待機
         # self.rcs660s.flush_buffer() #コマンド結果をクリア
@@ -116,6 +122,7 @@ class RCS660SManager:
         )
         self.rcs660s.send_command_frame()
         response = self.rcs660s.read_response(is_debug=False)
+        if self.is_debug: self.debug_response(response)
         # self.rcs660s.flush_buffer()
 
     def close(self) -> None:
