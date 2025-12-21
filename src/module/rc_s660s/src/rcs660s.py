@@ -45,15 +45,22 @@ class RCS660S:
         # デバッグ用
         if is_debug: self.__debug_command_frame()
 
-
+    def flush_buffer(self):
+        """
+        特に読む必要のないresponseをクリアする
+        これを実行することで, わざわざreadして, コマンドが全部返ってくるまで待つ必要がなくなる
+        """
+        self.uart.reset_input_buffer()
+        self.uart.reset_output_buffer()
+        return "flush buffer"
 
     def send_command_frame(self) -> None:
         self.uart.write(bytes(self.command_frame))
 
     def read_response(self, is_debug: bool=False) -> dict:
-        size = 256
+        size = 512
         self.response=bytes()
-        sleep_time=0.0001 # -> 1000Hz近辺まで周波数を上げなければ, 問題なし. 現状の目標は30Hz.
+        sleep_time=1.0/100000 # -> 1000Hz近辺まで周波数を上げなければ, 問題なし. 現状の目標は30Hz.
 
         # コマンドが返ってくるまでloopで問い合わせる. 
         # 全パケットが返ってきているかを, パケット長をもとに判定する
@@ -70,6 +77,17 @@ class RCS660S:
 
         response = self.ccid_command.read_ccid_response(ccid_response, apdu_response)
         return response
+
+
+    def read_discard(self) -> None:
+        """
+        バッファの残りを読み出して捨てる
+        """
+        sleep_time=1.0/1000
+        while self.uart.in_waiting > 0:
+            res=self.uart.read(self.uart.in_waiting)
+            print_hex("read_discard", res)
+            time.sleep(sleep_time)
 
 
     # -------------------------------------- private methods --------------------------------------
@@ -118,14 +136,14 @@ class RCS660S:
         
         # パケット長さをチェック
         packet_length = int.from_bytes(response[10:12], 'big') # 10,11番目にbigエンディアンでパケット長が入ってる
-        if len(response[12:]) >= packet_length + 3: # 3足してるのはpacket + チェックサム2バイト, ポストアンブル1バイト
+        if len(response[12:]) == packet_length + 3: # 3足してるのはpacket + チェックサム2バイト, ポストアンブル1バイト
             is_full = True
 
         return is_full
 
 
     def __debug_command_frame(self) -> None:
-        print("\033[33mdebug command frame =============================================================\033[0m")
+        print("\033[33mdebug Input command frame: =============================================================\033[0m")
         print_hex("packet_length", self.packet_length)
         print_hex("packet_length_checksum", self.packet_length_checksum)
         print_hex("packet_data_checksum", self.packet_data_checksum)
