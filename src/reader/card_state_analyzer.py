@@ -82,9 +82,9 @@ class CardStateAnalyzer:
         1. photo diodeでカードの縦横を判定
         """
         if photo_diode_value<self.photo_diode_threshold:
-            is_vertical=True
-        else:
             is_vertical=False
+        else:
+            is_vertical=True
         return is_vertical
     
         

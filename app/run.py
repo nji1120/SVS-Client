@@ -110,6 +110,7 @@ def main():
     )
 
 
+    print(f"[Init] value_stabilizer: {ceil(frequency*config_yaml['value_stabilizer_trj_seconds'])}")
     value_stabilizer=ValueStabilizer(
         trajectory_nums=ceil(frequency*config_yaml["value_stabilizer_trj_seconds"]), # S秒分の軌跡で安定化をする
         channel_names=config_yaml["reader_channels"]

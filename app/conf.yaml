@@ -1,11 +1,11 @@
 connection:
-  server: 192.168.2.119
+  server: 192.168.2.136
   port: 9999
-  frequency: 5 #Hz
+  frequency: 2 #Hz
 
 tag_type: TypeA_14443-3A # タグの種類 {Felica, TypeA_14443-3A}
-reader_channels: ["ch0","ch5"] # 読み取り対象のチャンネル名
-value_stabilizer_trj_seconds: 3 # [s] 値安定化する軌跡の秒数 → この値÷2が反応時間となる
+reader_channels: ["ch5"] # 読み取り対象のチャンネル名
+value_stabilizer_trj_seconds: 2 # [s] 値安定化する軌跡の秒数 → この値÷2が反応時間となる
 
 rcs660s:
   port: /dev/ttyAMA0
@@ -32,18 +32,31 @@ color-sensor:
     ch4: 16
     ch5: 32
   threshold:
-    ir: 2 # difference方式
+    ir: 5 # difference方式
 
     ## -- 赤スリーブ ------------------------
-    r:
-      low: 0.316535692
-      high: 0.364420859
+    ### 係数3(99.73 %) 帯域
+    # r:
+    #   low: 0.316535692
+    #   high: 0.364420859
+    # g:
+    #   low: 0.32218329
+    #   high: 0.353533888
+    # b:
+    #   low: 0.302937088
+    #   high: 0.340289939
+
+    ## 係数9 (99.99999999999999%) 帯域
+    r: 
+      low: 0.298650525
+      high: 0.382306026
     g:
-      low: 0.32218329
-      high: 0.353533888
+      low: 0.320832692
+      high: 0.354884486
     b:
-      low: 0.302937088
-      high: 0.340289939
+      low: 0.295584236
+      high: 0.34764279
+
 
     # ## -- 緑スリーブ ------------------------
     # r:
@@ -71,4 +84,4 @@ photo-diode:
     ch3: 2
     ch4: 1
     ch5: 0
-  threshold: -0.005 # difference方式
+  threshold: -0.01 # difference方式
