@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from ..module.tc4052b import TC4052B
 from ..module.rc_s660s.src.rcs660s_manager import RCS660SManager
-from ..module.color_sensor import ColorSensor
+from ..module.color_sensor.color_sensor import ColorSensor
 from ..module.photo_diode import PhotoDiode
 
 
