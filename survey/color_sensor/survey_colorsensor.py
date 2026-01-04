@@ -12,7 +12,7 @@ sys.path.append(str(ROOT.parent)) # sensor_tutorialsのパスを追加
 import argparse
 import time
 
-from SVS_Client.src.module.color_sensor import ColorSensor
+from SVS_Client.src.module.color_sensor.color_sensor import ColorSensor
 
 
 def main():

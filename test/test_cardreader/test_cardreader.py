@@ -11,11 +11,11 @@ import yaml
 import argparse
 import time
 
-from src.reader.CardReaderManager import CardReaderManager
+from src.reader.cardreader_manager import CardReaderManager
 from src.module.tc4052b import TC4052B
 from src.module.rc_s660s.src.rcs660s import RCS660S
 from src.module.rc_s660s.src.rcs660s_manager import RCS660SManager
-from src.module.color_sensor import ColorSensor
+from src.module.color_sensor.color_sensor import ColorSensor
 from src.module.photo_diode import PhotoDiode
 from src.utils.sleep import sleep
 
