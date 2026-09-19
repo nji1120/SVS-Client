@@ -80,7 +80,8 @@ class CardReaderManager:
 
     def read(self) -> dict:
 
-        # バスごとにスレッドで並列実行する
+        # センサごと(SPI, I2C, UART)にスレッドで並列実行する
+        # SPI、I2C、UARTで通信経路が分かれているため、スレッド化することで並列でセンシングできる
         future_results=[]
         with ThreadPoolExecutor(max_workers=3) as executor:
             future=[
