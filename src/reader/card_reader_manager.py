@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from ..module.tc4052b import TC4052B
 from ..module.rc_s660s.src.rcs660s_manager import RCS660SManager
-from ..module.color_sensor import ColorSensor
+from ..module.color_sensor.color_sensor import ColorSensor
 from ..module.photo_diode import PhotoDiode
 
 
@@ -80,7 +80,8 @@ class CardReaderManager:
 
     def read(self) -> dict:
 
-        # バスごとにスレッドで並列実行する
+        # センサごと(SPI, I2C, UART)にスレッドで並列実行する
+        # SPI、I2C、UARTで通信経路が分かれているため、スレッド化することで並列でセンシングできる
         future_results=[]
         with ThreadPoolExecutor(max_workers=3) as executor:
             future=[

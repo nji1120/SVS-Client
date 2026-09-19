@@ -2,6 +2,27 @@ from statistics import mode
 from copy import deepcopy
 
 
+def min_with_none(values):
+    """
+    全部NoneであればNoneを返す
+    そうでなければ最小値を返す
+    """
+    if all(value is None for value in values):
+        return None
+    else:   
+        return min(value for value in values if value is not None)
+
+def max_with_none(values):
+    """
+    全部NoneであればNoneを返す
+    そうでなければ最大値を返す
+    """
+    if all(value is None for value in values):
+        return None
+    else:   
+        return max(value for value in values if value is not None)
+
+
 class ValueStabilizer():
     """
     値をtrajectoryとして記憶し、移動平均化のようにするクラス
@@ -44,7 +65,16 @@ class ValueStabilizer():
             is_exist_none=False
 
             for key in self.state_keys:
-                stable_states[channel_name][key]=self.__get_stable_state(channel_name=channel_name,key=key)
+                if key == "is_front": # 表裏は最大値を取る. 一つでも表があるなら表と判定する.
+                    stat_func=max_with_none
+                elif key == "is_vertical": # 垂直は最小値を取る. 一つでも垂直があるなら垂直と判定する.
+                    stat_func=min_with_none
+                else: # それ以外は最頻値を取る
+                    stat_func=mode
+                stable_states[channel_name][key]=self.__get_stable_state(
+                    channel_name=channel_name,key=key,
+                    stat_func=stat_func
+                )
 
                 if stable_states[channel_name][key] is None:
                     is_exist_none=True
@@ -54,11 +84,12 @@ class ValueStabilizer():
         return stable_states
 
 
-    def __get_stable_state(self,channel_name,key):
-        """
+    def __get_stable_state(self,channel_name,key, stat_func=mode):
+        f"""
         安定した状態(=trajectoryにおける最頻値)を取得する
         :param channel_name: チャンネル名
         :param key: 状態のキー
+        :param stat_func: 安定した状態を取得する関数
         :return: そのキーのmode
         """
 
@@ -66,9 +97,8 @@ class ValueStabilizer():
         for trj_t in self.trajectory:
             state_trj.append(trj_t[channel_name][key])
 
-        state_distinct=list(set(state_trj)) # 重複を削除
-        state_num_max=3 # とりあえず, 最大でNone, True, Falseの3つがあるとする
-
+        # state_distinct=list(set(state_trj)) # 重複を削除
+        # state_num_max=3 # とりあえず, 最大でNone, True, Falseの3つがあるとする
         # if len(state_distinct) >= state_num_max:
         #     # 直近1/3の軌跡を取る
         #     latest_trj=state_trj[-int(len(state_trj)/5):]
@@ -76,9 +106,9 @@ class ValueStabilizer():
 
         #     # 直近が全部同じならそれ. そうでなければ全体のmodeを取る
         #     state_mode=latest_distinct[0] if len(latest_distinct)==1 else mode(state_trj)
-        
         # else:
-        state_mode=mode(state_trj)
+
+        state_mode=stat_func(state_trj) # 安定した状態を取得する関数を適用
         return state_mode
     
 

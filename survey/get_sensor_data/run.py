@@ -1,5 +1,5 @@
 from pathlib import Path
-ROOT=Path(__file__).parent.parent
+ROOT=Path(__file__).parent.parent.parent # SVS_Clientのルートディレクトリ
 import sys
 sys.path.append(str(ROOT))
 import traceback
@@ -11,6 +11,9 @@ import yaml
 import json
 import time
 from math import ceil
+import argparse
+import os
+import shutil
 
 from src.reader.card_state_analyzer import CardStateAnalyzer
 from src.reader.card_reader_manager import CardReaderManager, PhotoDiodeReadType, ColorSensorIRReadType
@@ -30,7 +33,38 @@ class TagType(Enum):
     TYPEA_14443_3A="TypeA_14443-3A"
 
 
+def unwrap_nest(sensor_values:dict, elapsed_time:float) -> dict:
+    """
+    nest構造のdictを1階層に展開する
+    """
+    out={"time":elapsed_time}
+    for ch_name, sensor_dict in sensor_values.items(): # chの階層でループ
+        out={"ch":ch_name}
+        for sensor_name, sensor_value in sensor_dict.items(): # sensorの階層でループ
+            if sensor_name=="color_sensor": # color_sensorの場合はさらにRGB+IRの階層があるので展開
+                for color_name, color_value in sensor_value.items():
+                    out[color_name]=color_value
+            else:
+                out[sensor_name]=sensor_value
+
+    return out
+
+
 def main():
+
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--duration", type=float, default=15, help="データを取得する時間 [s]")
+    parser.add_argument("--offset", type=float, default=5, help="データを取らない空回しの時間 [s]")
+    parser.add_argument("--out_dir", type=str, default="output", help="出力ディレクトリ")
+    parser.add_argument("--prefix", type=str, default=None, help="出力ファイル名のプレフィックス")
+    args=parser.parse_args()
+
+    out_dir=args.out_dir
+    out_file_prefix=args.prefix
+    offset=args.offset
+    duration=args.duration
+
+
     config_yaml=yaml.safe_load(open(Path(__file__).parent / "conf.yaml"))
 
 
@@ -121,13 +155,17 @@ def main():
 
 
     # >> 読み取り >>
+    sensor_values_list=[]
+    is_start=False
+
+
     print("[Start] read")
     previous_time=time.time_ns()
     start_time=previous_time
     sleep_time=1/frequency*10**9
     cnt=0
     elapsed_time=0
-    while True:
+    while elapsed_time<duration+offset:
         try:
             previous_time=time.time_ns()
             sensor_values=cardreader_manager.read()
@@ -147,16 +185,39 @@ def main():
                 (server,port)
             )
             print(f"[{cnt}] {elapsed_time:.3f}s\n",sensor_values,"\n",card_states)
+
+
+            # >> データを記録 (offset秒後から記録) >>
+            if elapsed_time>offset:
+                if not is_start:
+                    print("="*10+f"{duration}秒間 データ取得を開始します..."+"="*10)
+                sensor_values_list.append(unwrap_nest(sensor_values, elapsed_time))
+                is_start=True
             sleep(previous_time,sleep_time)
+            # << データを記録 (offset秒後から記録) <<
+
             cnt+=1
             elapsed_time=(time.time_ns()-start_time)*10**-9
+
         except Exception as e:
             print(e)
             print(traceback.format_exc())
             break
+
+
+    out_dir=Path(__file__).parent / out_dir
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    prefix=f"{out_file_prefix}_{time.strftime("%Y%m%d_%H%M%S")}" if not out_file_prefix is None else time.strftime("%Y%m%d_%H%M%S")
+    out_file=out_dir / f"{prefix}.csv"
+    pd.DataFrame(sensor_values_list).to_csv(out_file, index=False)
+
+    shutil.copy(Path(__file__).parent / "conf.yaml", out_dir / f"conf.yaml") # conf.yamlをコピー
+    print(f"データを{out_file}に保存しました")
+
+
     # >> 読み取り >>
 
-    print("end")
 
 
 if __name__ == "__main__":
